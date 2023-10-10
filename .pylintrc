@@ -1,0 +1,10 @@
+[MASTER]
+disable=
+    C0114, # missing-module-docstring
+    C0115, # (missing-class-docstring)
+    C0116, # (missing-function-docstring)
+    R0201, # Method could be a function (no-self-use)
+    R0913, # Too many arguments (7/5) (too-many-arguments)
+    R0903, # Too few public methods (1/2) (too-few-public-methods)
+    W0614  # Constants Binance
+max-line-length=140

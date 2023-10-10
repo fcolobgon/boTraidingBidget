@@ -1,0 +1,65 @@
+[tool.black]
+line-length = 90
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | \.vscode
+  | _build
+  | __pycache__
+  | buck-out
+  | build
+  | dist 
+  | venv
+)/
+'''
+
+
+[tool.pylint.messages_control]
+disable= """
+missing-module-docstring,missing-class-docstring,missing-function-docstring,no-self-use,
+too-few-public-methods,wrong-import-position,import-outside-toplevel
+"""
+max-line-length=90
+
+
+[tool.pylint.refactoring]
+max-nested-blocks=5
+
+
+[tool.pylint.similarities]
+ignore-comments=true
+ignore-docstrings=true
+ignore-imports=false
+min-similarity-lines=4
+
+
+
+[tool.bandit]
+tests = ["B201", "B301"]
+skips = ["B101", "B601"]
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests"
+]
+
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100

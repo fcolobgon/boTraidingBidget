@@ -1,0 +1,124 @@
+# #########################
+# ### ADX Configuration ###
+# #########################
+
+ADX_ENABLED = false
+ADX_QUERY = ""
+
+ADX_VALUE_SERIES = 300
+
+
+# ########################
+# ### AO Configuration ###
+# ########################
+
+AO_ENABLED = false
+AO_QUERY = ""
+
+
+# #########################
+# ### CCI Configuration ###
+# #########################
+
+CCI_ENABLED = false
+CCI_QUERY = ""
+
+CCI_VALUE_SERIES = 100
+
+
+# ############################
+# ### EMA 20 Configuration ###
+# ############################
+
+EMA_20_ENABLED = false
+EMA_20_QUERY = ""
+
+
+# ############################
+# ### EMA 50 Configuration ###
+# ############################
+
+EMA_50_ENABLED = false
+EMA_50_QUERY = ""
+
+
+# ##########################
+# ### MACD Configuration ###
+# ##########################
+
+MACD_ENABLED = false
+MACD_QUERY = ""
+
+MACD_VALUE_FAST  = 3
+MACD_VALUE_SLOW =  2    
+MACD_VALUE_SIGNAL =  1
+
+
+# ###########################
+# ### Price Configuration ###
+# ###########################
+
+PRICE_ENABLED = false
+PRICE_QUERY = ""
+
+
+# #########################
+# ### RSI Configuration ###
+# #########################
+
+RSI_ENABLED = false
+RSI_QUERY = ""
+
+
+# ###########################
+# ### STOCH Configuration ###
+# ###########################
+
+STOCH_ENABLED = false
+STOCH_QUERY = ""
+
+STOCH_VALUE_SERIES = 3
+STOCH_VALUE_D = 2
+STOCH_VALUE_SMOOTH = 1
+
+
+# ###############################
+# ### STOCH RSI Configuration ###
+# ###############################
+
+STOCH_RSI_ENABLED = false
+STOCH_RSI_QUERY = ""
+
+STOCH_RSI_VALUE_SERIES = 200
+
+
+# #############################
+# ### TOP 24H Configuration ###
+# #############################
+
+TOP_24H_ENABLED = false
+TOP_24H_QUERY = ""
+
+
+# ########################################
+# ### TOP GAINERS 15 MIN Configuration ###
+# ########################################
+
+TOP_GAINERS_15_MIN_ENABLED = false
+TOP_GAINERS_15_MIN_QUERY = ""
+
+
+# ###############################
+# ### TSI Configuration ###
+# ###############################
+
+TSI_ENABLED = true
+TSI_QUERY = ""
+TSI_VALUE_TIME_RANGE = "MINUTES_5" 
+
+# NOTA: Caso puntual
+TSI_VALUE_PERCENTAGE = 5
+
+TSI_VALUE_LONG = 31
+TSI_VALUE_SHORT = 3
+TSI_VALUE_SIGLEN = 24
