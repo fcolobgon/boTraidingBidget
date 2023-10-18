@@ -1,14 +1,14 @@
 from telegram.ext import Updater, CommandHandler,  CallbackContext, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from src.botrading.utils.binance_data_util import BinanceDataUtil
+from src.botrading.utils.bitget_data_util import BitgetDataUtil
 from src.botrading.utils import excel_util
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
-from src.botrading.thread.binance_buy_thread import BinanceBuyThreed
-from src.botrading.thread.binance_sell_thread import BinanceSellThreed
+from src.botrading.thread.bitget_buy_thread import BitgetBuyThreed
+from src.botrading.thread.bitget_sell_thread import BitgetSellThreed
 from src.botrading.utils import traiding_operations
-from src.botrading.bnb import BinanceClienManager
+from src.botrading.bit import BitgetClienManager
 from src.botrading.utils.dataframe_util import DataFrameUtil
 
 from pathlib import Path
@@ -17,10 +17,10 @@ import time
 
 class TelegramBot:
     
-    bnb_client: BinanceClienManager
-    binance_data_util: BinanceDataUtil
-    buy_thread:BinanceBuyThreed
-    sell_thread:BinanceSellThreed
+    bit_client: BitgetClienManager
+    Bitget_data_util: BitgetDataUtil
+    buy_thread:BitgetBuyThreed
+    sell_thread:BitgetSellThreed
     base_path:str
     bot_token:str
     #Comandos disponobles
@@ -48,11 +48,11 @@ class TelegramBot:
     send_files_command = "sendFiles"
 
     
-    def __init__(self, bnb_client: BinanceClienManager, buy_thread:BinanceBuyThreed,  sell_thread:BinanceSellThreed, base_path:str, bot_token:str):
-        self.bnb_client = bnb_client
+    def __init__(self, bit_client: BitgetClienManager, buy_thread:BitgetBuyThreed,  sell_thread:BitgetSellThreed, base_path:str, bot_token:str):
+        self.bit_client = bit_client
         self.buy_thread = buy_thread
         self.sell_thread = sell_thread
-        self.binance_data_util = buy_thread.get_binance_data_util()
+        self.Bitget_data_util = buy_thread.get_Bitget_data_util()
         self.bot_token = bot_token
         self.base_path = base_path
         excel_util.custom_init(base_path)
@@ -306,7 +306,7 @@ class TelegramBot:
     def new_coin(self, update:Updater, context:CallbackContext):
         
         data_frame = self.buy_thread.get_data_frame()
-        data_frame =self.binance_data_util.find_new_cryptos(data_frame)
+        data_frame =self.Bitget_data_util.find_new_cryptos(data_frame)
         
         if data_frame.empty == True:
             update.message.reply_text('No hay nuevas monedas en Binance')
@@ -339,7 +339,7 @@ class TelegramBot:
             else:
                 update.message.reply_text("No se encontro la moneda " + str(sell_coin))
         else:
-            sell_dataframe = traiding_operations.logic_sell(clnt_bnb=self.bnb_client, df_sell=sell_coin_data_frame)
+            sell_dataframe = traiding_operations.logic_sell(clnt_bnb=self.bit_client, df_sell=sell_coin_data_frame)
             lock_minutes = 60*14
             sell_dataframe = DataFrameUtil.locking_time(data_frame = sell_dataframe, minutes = lock_minutes)
             self.buy_thread.merge_dataframes(update_data_frame = sell_dataframe)
@@ -367,7 +367,7 @@ class TelegramBot:
         state_query = RuleUtils.get_rules_search_by_states(rules)
         
         data_frame_sell_now = data_frame_for_sell.query(state_query)
-        sell_dataframe = traiding_operations.logic_sell(clnt_bnb=self.bnb_client, df_sell=data_frame_sell_now)
+        sell_dataframe = traiding_operations.logic_sell(clnt_bnb=self.bit_client, df_sell=data_frame_sell_now)
         self.buy_thread.merge_dataframes(update_data_frame = sell_dataframe)
         
         time.sleep(2)
@@ -396,7 +396,7 @@ class TelegramBot:
         
         data_frame_sell_now = data_frame_for_sell.query(state_query)
         
-        traiding_operations.logic_sell(clnt_bnb=self.bnb_client, df_sell=data_frame_sell_now)
+        traiding_operations.logic_sell(clnt_bnb=self.bit_client, df_sell=data_frame_sell_now)
         time.sleep(1)
         update.message.reply_text("Parada de bot con venta de todas las monedas")
         self.profit_detail(update,context)

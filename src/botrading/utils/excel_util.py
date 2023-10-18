@@ -211,6 +211,24 @@ def load_dataframe(exel_name: str = ""):
 
     return df_read_excel
 
+def load_dataframe():
+
+    #data_frame_pattern = "*" + data_frame_file_name + "*" + data_frame_file_extension
+    data_frame_pattern = data_frame_file_name + data_frame_file_extension
+
+    list_of_files = glob.glob(
+        str(Path(str(data_frame_file_path), str(data_frame_pattern)))
+    )  # * means all if need specific format then *.csv
+
+    df_read_excel = pandas.DataFrame()
+
+    if len(list_of_files) > 0:
+        latest_file = max(list_of_files, key=os.path.getctime)
+        df_read_excel = pandas.read_excel(latest_file, index_col=0)
+
+    return df_read_excel
+
+
 def remove_dataframe(exel_name: str = "") -> bool:
     
     remove_path = Path(str(data_frame_file_path), str(exel_name))
@@ -237,19 +255,4 @@ def save_data_frame(data_frame: pandas.DataFrame, exel_name: str = ""):
         print(str(e))
         pass
 
-def create_dataframe_from_previous_execution():
 
-    #data_frame_pattern = "*" + data_frame_file_name + "*" + data_frame_file_extension
-    data_frame_pattern = data_frame_file_name + data_frame_file_extension
-
-    list_of_files = glob.glob(
-        str(Path(str(data_frame_file_path), str(data_frame_pattern)))
-    )  # * means all if need specific format then *.csv
-
-    df_read_excel = pandas.DataFrame()
-
-    if len(list_of_files) > 0:
-        latest_file = max(list_of_files, key=os.path.getctime)
-        df_read_excel = pandas.read_excel(latest_file, index_col=0)
-
-    return df_read_excel

@@ -38,7 +38,7 @@ class BinanceClienManager:
         my_os = platform.system()
 
         if my_os == "Windows":
-            from src.botrading.utils.binance_client_util import BinanceClientUtil
+            from src.botrading.utils.bitget_client_util import BinanceClientUtil
             
             #Synchronise Time for Win
             BinanceClientUtil.synchronise_times(self.bnb_client)

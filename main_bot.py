@@ -1,10 +1,10 @@
 import urllib3
 
-from src.botrading.thread.binance_buy_thread import BinanceBuyThreed
-from src.botrading.thread.binance_sell_thread import BinanceSellThreed
+from src.botrading.thread.bitget_buy_thread import BitgetBuyThreed
+from src.botrading.thread.bitget_sell_thread import BitgetSellThreed
 from src.botrading.model.time_ranges import *
 from src.botrading.utils import excel_util
-from src.botrading.bnb import BinanceClienManager
+from src.botrading.bit import BitgetClienManager
 from src.botrading.telegram.telegram_bot import TelegramBot
 from src.botrading.strategy.strategy import Strategy
 
@@ -24,20 +24,21 @@ if __name__ == '__main__':
     
     excel_util.custom_init(settings.FILES_BASE_PATH)
 
-    bnb_client = BinanceClienManager(test_mode = settings.BINANCE_CLIENT_TEST_MODE, api_key = settings.BO_TRADING_API_KEY_BIN, api_secret = settings.BO_TRADING_SECRET_KEY_BIN)
+    bit_client = BitgetClienManager(test_mode = settings.BITGET_CLIENT_TEST_MODE, api_key = settings.API_KEY_BIT, api_secret = settings.API_SECRET_BIT, api_passphrase = settings.API_PASSPHRASE_BIT)
 
     print("### START MAIN ###")
+    bitget_buy_threed = BitgetBuyThreed(bit_client = bit_client, strategy = strategy, max_coin_buy = settings.MAX_COIN_BUY, quantity_buy_order = settings.QUANTITY_BUY_ORDER, load_from_previous_execution = settings.LOAD_FROM_PREVIOUS_EXECUTION, observe_coin_list=settings.OBSERVE_COIN_LIST, remove_coin_list=settings.REMOVE_COIN_LIST)
+    bitget_buy_threed.start()
+    bitget_buy_threed.wait_buy_thread_ready()
 
-    binance_buy_threed = BinanceBuyThreed(bnb_client = bnb_client, strategy = strategy, max_coin_buy = settings.MAX_COIN_BUY, quantity_buy_order = settings.QUANTITY_BUY_ORDER, load_from_previous_execution = settings.LOAD_FROM_PREVIOUS_EXECUTION, observe_coin_list=settings.OBSERVE_COIN_LIST, remove_coin_list=settings.REMOVE_COIN_LIST)
-    binance_buy_threed.start()
-    
-    binance_buy_threed.wait_buy_thread_ready()
-    
-    binance_sell_threed = BinanceSellThreed(bnb_client = bnb_client, strategy = strategy, buy_thread = binance_buy_threed)
-    binance_sell_threed.start()
 
-    bnb_market_client = BinanceClienManager(api_key = settings.MARKET_API_KEY_BIN, api_secret = settings.MARKET_SECRET_KEY_BIN)
+
+    """
+    bitget_sell_threed = BitgetSellThreed(bit_client = bit_client, strategy = strategy, buy_thread = bitget_buy_threed)
+    bitget_sell_threed.start()
+
+    bit_market_client = BitgetClienManager(api_key = settings.MARKET_API_KEY_BIN, api_secret = settings.MARKET_SECRET_KEY_BIN)
     
-    telegram_bot = TelegramBot(bnb_client = bnb_client, buy_thread = binance_buy_threed, sell_thread = binance_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
+    telegram_bot = TelegramBot(bnb_client = bit_client, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
     telegram_bot.start()
-    
+    """

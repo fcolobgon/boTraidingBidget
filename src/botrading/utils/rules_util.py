@@ -2,8 +2,8 @@
 from typing import List
 from xmlrpc.client import Boolean
 
-from src.botrading.utils.binance_data_util import DataFrameColum
-from src.botrading.utils.binance_data_util import ColumStateValues
+from src.botrading.utils.bitget_data_util import DataFrameColum
+from src.botrading.utils.bitget_data_util import ColumStateValues
 
 
 class NotSupportedException(Exception):

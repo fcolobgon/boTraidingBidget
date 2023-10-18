@@ -3,16 +3,15 @@ from datetime import datetime
 import pandas
 from binance import helpers
 
-from src.botrading.bnb import BinanceClienManager
+from src.botrading.bit import BitgetClienManager
 from src.botrading.constants import botrading_constant
 from src.botrading.utils import excel_util
-from src.botrading.model.binance_coin_model import *
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
 
 def logic_buy(
-    clnt_bnb: BinanceClienManager,
+    clnt_bnb: BitgetClienManager,
     df_buy,
     quantity_buy: int,
 ):
@@ -66,7 +65,7 @@ def logic_buy(
     return df_buy
 
 
-def logic_sell(clnt_bnb: BinanceClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
+def logic_sell(clnt_bnb: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
 
     print("------------------- INICIO VENTA  -------------------")
 
@@ -111,8 +110,8 @@ class TradingUtil:
 
     @staticmethod
     def sell_with_retries(
-        clnt_bnb: BinanceClienManager, symbol: str, base_asset: str
-    ) -> BinandeOrder:
+        clnt_bnb: BitgetClienManager, symbol: str, base_asset: str
+    ):
         max_retries = 5
         order = None
         qntty_assent = clnt_bnb.get_balance_for_symbol(symbol) 
@@ -141,7 +140,7 @@ class TradingUtil:
         return None
 
     @staticmethod
-    def format_qty_for_sell(clnt_bnb: BinanceClienManager, symbol, price, qty: float):
+    def format_qty_for_sell(clnt_bnb: BitgetClienManager, symbol, price, qty: float):
 
         coin_inf = clnt_bnb.get_inf_coin(symbol)
 

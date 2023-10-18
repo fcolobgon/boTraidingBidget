@@ -1,7 +1,7 @@
 import pandas
 
 from src.botrading.model.indocators import *
-from src.botrading.utils.binance_data_util import BinanceDataUtil
+from src.botrading.utils.bitget_data_util import BitgetDataUtil
 from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
@@ -16,7 +16,7 @@ class Strategy:
         
         self.name = name
 
-    def apply_buy(self, binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
 
         rules = [ColumStateValues.WAIT, ColumStateValues.SELL]
         state_query = RuleUtils.get_rules_search_by_states(rules)
@@ -26,7 +26,7 @@ class Strategy:
         return filtered_data_frame
     
 
-    def apply_sell(self, binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    def apply_sell(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
 
         filtered_data_frame = data_frame
 

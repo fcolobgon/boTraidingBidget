@@ -15,64 +15,59 @@ from ta.trend import ADXIndicator
 import pandas_ta 
 
 from src.botrading.constants import botrading_constant
-from src.botrading.model.binance_coin_model import *
 from src.botrading.model.indocators import *
 from src.botrading.model.time_ranges import *
-from src.botrading.bnb import BinanceClienManager
+from src.botrading.bit import BitgetClienManager
 from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils import excel_util
 from src.botrading.utils.enums.colum_state_values import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
+
+from configs.config import settings as settings
+
 import requests
 
      
-class BinanceDataUtil:
+class BitgetDataUtil:
 
-    quote_asset = botrading_constant.QUOTE_ASSET
-    bnb_client: BinanceClienManager
-    crypto_observe_list: List[BinanceSymbolModel]
-    crypto_remove = ["EUR", "USDC", "BUSD", "T", "BTTC", "UST", "SUSD", 
-    "USDP", "ADADOWN", "BTCDOWN","DOTDOWN", "TRXDOWN", "LINKDOWN", "BNBDOWN", 
-    "ETHDOWN", "XRPDOWN", "NBT", "TRXUP", "ADAUP", "LINKUP", "BNBUP", "XRPUP", 
-    "ETHUP", "BTCUP", "GBP", "FTT", "TUSDT", "TUSD"]
+    quote_asset = botrading_constant.FUTURE_CONTRACT_USDT_UMCBL
+    bit_client: BitgetClienManager
+    crypto_observe_list: List
+    crypto_remove = []
+    data_frame_full: pandas.DataFrame = pandas.DataFrame()
     data_frame_bkp: pandas.DataFrame = pandas.DataFrame()
 
     def __init__(
         self,
-        bnb_client: BinanceClienManager,
-        crypto_observe_default_list: List[str] = [],
-        crypto_remove_list: List[str] = [],
+        bit_client: BitgetClienManager,
+        crypto_observe_default_list: List[str] = settings.OBSERVE_COIN_LIST,
+        crypto_remove_list: List[str] = settings.REMOVE_COIN_LIST,
         load_from_previous_execution: bool = False,
     ):
-      
-        self.crypto_remove+=crypto_remove_list
-        self.bnb_client = bnb_client
+    
+        self.crypto_remove = crypto_remove_list
+        self.crypto_observe_list = crypto_observe_default_list
+        self.bit_client = bit_client
 
         if load_from_previous_execution == True:
-            self.data_frame_bkp = excel_util.create_dataframe_from_previous_execution()
+            self.data_frame_bkp = excel_util.load_dataframe()
+            self.data_frame_bkp[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
         
         if self.data_frame_bkp.empty:
-            all_cryptos = self.bnb_client.get_all_coins_filter_quote_assets(botrading_constant.QUOTE_ASSET)
+            all_coins_df = self.bit_client.get_all_coins_filter_contract(productType=settings.FUTURE_CONTRACT)
             
             #Remove selected coins
-            for crypto in self.crypto_remove:
-                for s in all_cryptos:
-                    if s.baseAsset == crypto:
-                        print("Eliminadno moneda " + str(crypto) + " de la lista de monedas observables")
-                        all_cryptos.remove(s)
+            all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df['baseCoin'].isin(self.crypto_remove)].index)
             
-            if len(crypto_observe_default_list) == 0:
+            if len(self.crypto_observe_list) == 0:
                 #All coins
-                self.crypto_observe_list = all_cryptos
+                self.data_frame_full = all_coins_df
             else:
-                #Selected coins
-                self.crypto_observe_list = []
-                for observe in crypto_observe_default_list:
-                    for s in all_cryptos:
-                        if s.baseAsset == observe:
-                            print("Agregando moneda " + str(observe) + " de la lista de monedas observables")
-                            self.crypto_observe_list.append(s)
+                #Mantener filas
+                self.data_frame_full = all_coins_df[all_coins_df['baseCoin'].isin(self.crypto_observe_list)]
+            
+            self.data_frame_full[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
     
     def create_data_frame(self):
         
@@ -137,14 +132,14 @@ class BinanceDataUtil:
     def get_crypto_observe_list(self):
         return self.crypto_observe_list
         
-    def get_historial_x_day_ago_all_crypto(self,  df_master,time_range:TimeRanges=None, limit:int = 500) -> Dict:
+    def get_historial_x_day_ago_all_crypto(self,  df_master,time_range:TimeRanges=None, limit:int = 500) -> dict:
         
         dict_values = {}
 
         for ind in df_master.index:
             symbol = df_master[DataFrameColum.SYMBOL.value][ind]
 
-            prices_history = self.bnb_client.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
+            prices_history = self.bit_client.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
                 "Open time",
                 "Open",
                 "High",
@@ -163,7 +158,7 @@ class BinanceDataUtil:
 
         return dict_values
     
-    def updating_price_indicators(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_price_indicators(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         data_frame = DataFrameCheckUtil.create_price_columns(data_frame=data_frame)
         
@@ -174,7 +169,7 @@ class BinanceDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                                 
@@ -220,7 +215,7 @@ class BinanceDataUtil:
        
         return True
 
-    def updating_rsi(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_rsi(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         data_frame = DataFrameCheckUtil.create_rsi_columns(data_frame=data_frame)
         
@@ -231,7 +226,7 @@ class BinanceDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                     
@@ -250,7 +245,7 @@ class BinanceDataUtil:
             
         return data_frame
     
-    def updating_supertrend(self, config_supertrend:ConfigSupertrend=ConfigSupertrend(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None):
+    def updating_supertrend(self, config_supertrend:ConfigSupertrend=ConfigSupertrend(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
         length = config_supertrend.length
         factor = config_supertrend.factor
         super_name = "SUPERTd_"+ str(length) +"_" + str(factor) +".0"
@@ -264,7 +259,7 @@ class BinanceDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                     
@@ -294,7 +289,7 @@ class BinanceDataUtil:
         return data_frame
 
 
-    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         series = config_adx.series
         
@@ -307,7 +302,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -332,7 +327,7 @@ class BinanceDataUtil:
         
         return data_frame  
     
-    def updating_ao(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_ao(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
 
         data_frame = DataFrameCheckUtil.create_ao_columns(data_frame=data_frame)
         
@@ -343,7 +338,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -364,13 +359,13 @@ class BinanceDataUtil:
         
         for ind in data_frame.index:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            currentPrice = self.bnb_client.get_price_for_symbol(symbol)
+            currentPrice = self.bit_client.get_price_for_symbol(symbol)
 
             data_frame.loc[ind, DataFrameColum.PRICE_BUY.value] = currentPrice
         
         return data_frame        
     
-    def updating_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:Dict = None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
         fast=config_macd.fast
         slow=config_macd.slow
@@ -389,7 +384,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -422,7 +417,7 @@ class BinanceDataUtil:
         
         return data_frame 
     
-    def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:Dict = None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
         long_stoch = config_stoch_rsi.longitud_stoch
         long_rsi = config_stoch_rsi.longitud_rsi
@@ -441,7 +436,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -476,7 +471,7 @@ class BinanceDataUtil:
     
 
 
-    def updating_stoch(self, config_stoch:ConfigSTOCH=ConfigSTOCH(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3):
+    def updating_stoch(self, config_stoch:ConfigSTOCH=ConfigSTOCH(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
         
         #Configuracion Gabri
         series = config_stoch.series
@@ -495,7 +490,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -524,7 +519,7 @@ class BinanceDataUtil:
         
         return data_frame
     
-    def updating_cci(self, config_cci:ConfigCCI=ConfigCCI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3):
+    def updating_cci(self, config_cci:ConfigCCI=ConfigCCI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
                 
         series = config_cci.series
         
@@ -537,7 +532,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -561,7 +556,7 @@ class BinanceDataUtil:
         return data_frame
 
 
-    def updating_tsi(self, config_tsi:ConfigTSI=ConfigTSI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3):
+    def updating_tsi(self, config_tsi:ConfigTSI=ConfigTSI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
         
         #Configuracion Gabri
 
@@ -581,7 +576,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -609,7 +604,7 @@ class BinanceDataUtil:
         return data_frame
 
 
-    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         length = config_ma.length
         type = config_ma.type
@@ -623,7 +618,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -657,7 +652,7 @@ class BinanceDataUtil:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
             
             previous_price = data_frame[DataFrameColum.PRICE_BUY.value][ind]
-            currentPrice = self.bnb_client.get_price_for_symbol(symbol)
+            currentPrice = self.bit_client.get_price_for_symbol(symbol)
             profit =  (float(currentPrice)*100.0 / float(previous_price))-100
 
             previous_profit = data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value]
@@ -670,7 +665,7 @@ class BinanceDataUtil:
 
         return data_frame
 
-    def updating_trix(self, config_trix:ConfigTrix=ConfigTrix(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:Dict=None, ascending_count:int = 3):
+    def updating_trix(self, config_trix:ConfigTrix=ConfigTrix(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
 
         length = config_trix.length
         signal = config_trix.signal
@@ -686,7 +681,7 @@ class BinanceDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -787,7 +782,7 @@ class BinanceDataUtil:
 
         for ind in data_frame.index:
             symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
-            prices_history_24h = self.bnb_client.get_change_price_24h(symbol)
+            prices_history_24h = self.bit_client.get_change_price_24h(symbol)
             dict_values[symbol] = prices_history_24h
         
         now =  datetime.now()

@@ -4,7 +4,7 @@ import time
 from src.botrading.model.time_ranges import *
 from src.botrading.utils import excel_util
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
-from src.botrading.utils.binance_data_util import BinanceDataUtil
+from src.botrading.utils.bitget_data_util import BinanceDataUtil
 from src.botrading.thread.enums.binance_market_status import BinanceMarketStatus
 
 class DateUtil:
