@@ -5,6 +5,7 @@ from src.botrading.utils.bitget_data_util import BitgetDataUtil
 from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
+from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 
 from configs.config import settings as settings
 
@@ -22,7 +23,7 @@ class Strategy:
         state_query = RuleUtils.get_rules_search_by_states(rules)
         filtered_data_frame: pandas.DataFrame
         filtered_data_frame = data_frame.query(state_query)
-
+        filtered_data_frame[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
         return filtered_data_frame
     
 
