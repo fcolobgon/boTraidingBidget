@@ -26,7 +26,7 @@ class BitgetClienManager:
             self.buy_sell = False
         else:
             self.buy_sell = True
-        self.bit_client = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase)
+        self.bit_client = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=False)
 
         # Check OS
         my_os = platform.system()
@@ -47,42 +47,23 @@ class BitgetClienManager:
 
         return df_symbol_inf
     
-    """
-    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
-    def get_all_coins_filter_quote_assets(self, quote_asset) -> List[BitgetSymbolModel]:
+    def orde_buy_for_market(self,symbol,marginCoin: str = botrading_constant.PAIR_ASSET_DEFAULT, size: float = 0):
 
-        bpm = BitgetProductModel(self.bit_client.get_exchange_info())
-        return self.filter_binance_symbol_model_by_quote_assets(bpm.symbols, quote_asset)
-    """
+        self.bit_client.mix_place_order(symbol,marginCoin, size, side= 'Buy',orderType = 'market', price='')
 
-    def orde_buy(self,symbol,marginCoin: str = botrading_constant.PAIR_ASSET_DEFAULT, size: float):
-        self.bit_client.mix_place_order(symbol,marginCoin, size, side= 'Buy',orderType,price='',clientOrderId=None,reduceOnly=False,timeInForceValue='normal',presetTakeProfitPrice='',presetStopLossPrice='')
-
-"""
-symbol: El símbolo del activo subyacente.
-marginCoin: La moneda de margen utilizada para la orden.
-size: El tamaño de la orden.
-side: El lado de la orden, ya sea "buy" o "sell".
-orderType: El tipo de orden, ya sea "market", "limit", "stop_loss", o "take_profit".
-price: El precio de la orden, si se trata de una orden limitada, de stop loss, o de take profit.
-clientOrderId: Un ID de orden único proporcionado por el usuario.
-reduceOnly: Un booleano que indica si la orden solo debe reducir la posición existente.
-timeInForceValue: El tipo de orden de tiempo en vigor, ya sea "normal", "ioc", o "fok".
-presetTakeProfitPrice: El precio de activación de la orden de take profit.
-presetStopLossPrice: El precio de activación de la orden de stop loss.
-"""
-
-
-
-
-
-
-
-
-
-
-
-
+        """
+        symbol: El símbolo del activo subyacente.
+        marginCoin: La moneda de margen utilizada para la orden.
+        size: El tamaño de la orden.
+        side: El lado de la orden, ya sea "buy" o "sell".
+        orderType: El tipo de orden, ya sea "market", "limit", "stop_loss", o "take_profit".
+        price: El precio de la orden, si se trata de una orden limitada, de stop loss, o de take profit.
+        clientOrderId: Un ID de orden único proporcionado por el usuario.
+        reduceOnly: Un booleano que indica si la orden solo debe reducir la posición existente.
+        timeInForceValue: El tipo de orden de tiempo en vigor, ya sea "normal", "ioc", o "fok".
+        presetTakeProfitPrice: El precio de activación de la orden de take profit.
+        presetStopLossPrice: El precio de activación de la orden de stop loss.
+        """
 
 
 
