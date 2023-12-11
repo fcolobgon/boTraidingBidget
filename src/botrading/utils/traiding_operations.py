@@ -11,25 +11,24 @@ from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
 from configs.config import settings as settings
 
-
-def logic_buy(clnt_bit: BitgetClienManager,df_buy,quantity_buy: int):
+"""_summary_
+    sideType: short o long
+"""
+def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_buy: int, sideType:str):
 
     for ind in df_buy.index:
         symbol = df_buy[DataFrameColum.BASE.value][ind]
-        print(
-            "------------------- INICIO COMPRA " + str(symbol) + "-------------------"
-        )
-        order = None
+        print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
 
-        clnt_bit.bit_client.mix_place_order(symbol,marginCoin = settings.MARGINCOIN, size = quantity_buy, side = 'buy', orderType = 'market',price='')
-
-        order = clnt_bit.orde_buy(symbol, quantity_buy)
-
+        order = clnt_bit.bit_client.mix_place_order(symbol, marginCoin = settings.MARGINCOIN, size = quantity_buy, side = 'open_' + sideType, orderType = 'market')
+        order = order["data"]
+        
         if order is None:
             print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
-        elif order.side == "BUY":
+        else:
+            
             df_buy[DataFrameColum.STATE.value][ind] = ColumStateValues.BUY.value
-            df_buy[DataFrameColum.PRICE_BUY.value][ind] = order.price
+            df_buy[DataFrameColum.CLIENT_ORDER_ID.value][ind] = order["clientOid"]
             df_buy[DataFrameColum.DATE.value][ind] = datetime.now()
 
     excel_util.save_buy_file(df_buy)
@@ -37,7 +36,7 @@ def logic_buy(clnt_bit: BitgetClienManager,df_buy,quantity_buy: int):
     return df_buy
 
 
-def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
+def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame, sideType:str) -> pandas.DataFrame:
 
     print("------------------- INICIO VENTA  -------------------")
 
@@ -46,6 +45,7 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
         symbol = df_sell[DataFrameColum.BASE.value][ind]
 
         order = TradingUtil.sell_with_retries(clnt_bit, symbol, botrading_constant.PAIR_ASSET_DEFAULT)
+        order = order["data"]
 
         if order is None:
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value

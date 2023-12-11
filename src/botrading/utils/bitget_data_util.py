@@ -101,6 +101,7 @@ class BitgetDataUtil:
             data_frame[DataFrameColum.NOTE_3.value] = "-"
             data_frame[DataFrameColum.NOTE_4.value] = "-"
             data_frame[DataFrameColum.NOTE_5.value] = "-"
+            data_frame[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
             
             data_frame = DataFrameCheckUtil.create_price_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_candle_trend_columns(data_frame=data_frame)
