@@ -9,63 +9,35 @@ from src.botrading.utils import excel_util
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
+from configs.config import settings as settings
 
-def logic_buy(
-    clnt_bnb: BitgetClienManager,
-    df_buy,
-    quantity_buy: int,
-):
+
+def logic_buy(clnt_bit: BitgetClienManager,df_buy,quantity_buy: int):
 
     for ind in df_buy.index:
         symbol = df_buy[DataFrameColum.BASE.value][ind]
         print(
             "------------------- INICIO COMPRA " + str(symbol) + "-------------------"
         )
-        has_balance = True
         order = None
 
-        # TODO: Calcular el balance para comprar con la siguiente función
-        # if clnt_bnb.buy_sell == True:
-        #    buy_balance = quantity_buy
+        clnt_bit.bit_client.mix_place_order(symbol,marginCoin = settings.MARGINCOIN, size = quantity_buy, side = 'buy', orderType = 'market',price='')
 
-        # buy_balance =  self.bnb_client.has_balance_for_buy()
-        # if buy_balance == 0:
-        #    return df_buy
+        order = clnt_bit.orde_buy(symbol, quantity_buy)
 
-        balance_for_asset = clnt_bnb.get_balance_for_symbol(
-            botrading_constant.QUOTE_ASSET
-        )
-
-        if clnt_bnb.buy_sell == True:
-            if float(balance_for_asset) > quantity_buy:
-                quantity_buy = quantity_buy
-            elif float(balance_for_asset) > botrading_constant.QUANTITY_BUY_MIN:
-                quantity_buy = botrading_constant.QUANTITY_BUY_MIN
-            else:
-                has_balance = False
-                print("------------------- NO HAY SUFICIENTE BLANCE PARA REALIZAR LA COMPRA COMPRA "+ str(symbol)+ "-------------------")
-                print("------------------- BALANCE ACTUAL "+ str(balance_for_asset)+ "-------------------")
-                print("------------------- CANTIDAD DE COMPRA SOLICITADA "+ str(quantity_buy)+ "-------------------")
-
-        if has_balance:
-
-            print("------------------- BALANCE ACTUAL "+ str(balance_for_asset)+ "-------------------")
-            print("------------------- CANTIDAD DE COMPRA SOLICITADA "+ str(quantity_buy)+ "-------------------")
-            order = clnt_bnb.orde_buy(symbol, quantity_buy)
-
-            if order is None:
-                print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
-            elif order.side == "BUY":
-                df_buy[DataFrameColum.STATE.value][ind] = ColumStateValues.BUY.value
-                df_buy[DataFrameColum.PRICE_BUY.value][ind] = order.price
-                df_buy[DataFrameColum.DATE.value][ind] = datetime.now()
+        if order is None:
+            print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
+        elif order.side == "BUY":
+            df_buy[DataFrameColum.STATE.value][ind] = ColumStateValues.BUY.value
+            df_buy[DataFrameColum.PRICE_BUY.value][ind] = order.price
+            df_buy[DataFrameColum.DATE.value][ind] = datetime.now()
 
     excel_util.save_buy_file(df_buy)
 
     return df_buy
 
 
-def logic_sell(clnt_bnb: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
+def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
 
     print("------------------- INICIO VENTA  -------------------")
 
@@ -73,7 +45,7 @@ def logic_sell(clnt_bnb: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
 
         symbol = df_sell[DataFrameColum.BASE.value][ind]
 
-        order = TradingUtil.sell_with_retries(clnt_bnb, symbol, botrading_constant.PAIR_ASSET_DEFAULT)
+        order = TradingUtil.sell_with_retries(clnt_bit, symbol, botrading_constant.PAIR_ASSET_DEFAULT)
 
         if order is None:
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
@@ -110,29 +82,29 @@ class TradingUtil:
 
     @staticmethod
     def sell_with_retries(
-        clnt_bnb: BitgetClienManager, symbol: str, base_asset: str
+        clnt_bit: BitgetClienManager, symbol: str, base_asset: str
     ):
         max_retries = 5
         order = None
-        qntty_assent = clnt_bnb.get_balance_for_symbol(symbol) 
+        qntty_assent = clnt_bit.get_balance_for_symbol(symbol) 
         #! Este es el valor que debemos tocar para ganar más precisión en la venta. Debemo sumarle precicion_decimal()
         #qntty_assent = qntty_assent + (TradingUtil.precision_decimal(qntty_assent)*2)
-        price = clnt_bnb.get_price_for_symbol(symbol + base_asset) 
-        qty = TradingUtil.format_qty_for_sell(clnt_bnb, symbol + base_asset, price, float(qntty_assent))
+        price = clnt_bit.get_price_for_symbol(symbol + base_asset) 
+        qty = TradingUtil.format_qty_for_sell(clnt_bit, symbol + base_asset, price, float(qntty_assent))
 
         cont = 1
         #!Reintentos
         while order is None and cont < max_retries:
             print("-------------------" + str(cont) + " REINTENTO VENTA " + symbol + " CANTIDAD " + qntty_assent + "-------------------")
             
-            order = clnt_bnb.orde_sell_quantity(symbol, qty, base_asset)
+            order = clnt_bit.orde_sell_quantity(symbol, qty, base_asset)
             print("INTENTO DE VENTA NUMERO " + str(cont) + " ORDEN " + str(order))
 
             if order:
                 return order
 
             qty_diff = TradingUtil.diff_precision_decimal(qty)
-            qty = TradingUtil.format_qty_for_sell(clnt_bnb, symbol + base_asset, price, qty_diff)
+            qty = TradingUtil.format_qty_for_sell(clnt_bit, symbol + base_asset, price, qty_diff)
             cont += 1
 
         print("LA VENTA NO SE HA PODIDO REALIZAR PARA " + str(symbol))
@@ -140,9 +112,9 @@ class TradingUtil:
         return None
 
     @staticmethod
-    def format_qty_for_sell(clnt_bnb: BitgetClienManager, symbol, price, qty: float):
+    def format_qty_for_sell(clnt_bit: BitgetClienManager, symbol, price, qty: float):
 
-        coin_inf = clnt_bnb.get_inf_coin(symbol)
+        coin_inf = clnt_bit.get_inf_coin(symbol)
 
         for filter in coin_inf.filters:
             if filter.filterType == "LOT_SIZE":
