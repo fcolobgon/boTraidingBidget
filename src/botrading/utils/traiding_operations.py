@@ -17,7 +17,7 @@ from configs.config import settings as settings
 def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_buy: int, sideType:str):
 
     for ind in df_buy.index:
-        symbol = df_buy[DataFrameColum.BASE.value][ind]
+        symbol = df_buy['symbol'][ind]
         print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
 
         order = clnt_bit.bit_client.mix_place_order(symbol, marginCoin = settings.MARGINCOIN, size = quantity_buy, side = 'open_' + sideType, orderType = 'market')

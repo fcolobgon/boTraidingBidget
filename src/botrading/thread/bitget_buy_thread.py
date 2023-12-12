@@ -66,7 +66,7 @@ class BitgetBuyThreed(threading.Thread):
             crypto_remove_list=remove_coin_list
         )
         if load_from_previous_execution == False:
-            self.data_frame = self.bitget_data_util.data_frame_full
+            self.data_frame = self.bitget_data_util.data_frame_bkp
             excel_util.save_data_frame(data_frame = self.data_frame, exel_name=self.data_frame_name)
         else:
             self.data_frame = self.bitget_data_util.data_frame_bkp
