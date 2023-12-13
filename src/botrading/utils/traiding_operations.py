@@ -14,10 +14,12 @@ from configs.config import settings as settings
 """_summary_
     sideType: short o long
 """
-def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_buy: int, sideType:str):
+def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_buy: int):
 
     for ind in df_buy.index:
-        symbol = df_buy['symbol'][ind]
+        symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]
+        sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
+
         print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
 
         order = clnt_bit.bit_client.mix_place_order(symbol, marginCoin = settings.MARGINCOIN, size = quantity_buy, side = 'open_' + sideType, orderType = 'market')
@@ -28,7 +30,6 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_buy: int, sideType:
         else:
             
             df_buy[DataFrameColum.STATE.value][ind] = ColumStateValues.BUY.value
-            df_buy[DataFrameColum.CLIENT_ORDER_ID.value][ind] = order["clientOid"]
             df_buy[DataFrameColum.DATE.value][ind] = datetime.now()
 
     excel_util.save_buy_file(df_buy)

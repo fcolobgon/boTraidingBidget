@@ -23,6 +23,9 @@ class Strategy:
         state_query = RuleUtils.get_rules_search_by_states(rules)
         filtered_data_frame: pandas.DataFrame
         filtered_data_frame = data_frame.query(state_query)
+
+        filtered_data_frame[DataFrameColum.SIDE_TYPE.value] = "short"
+
         filtered_data_frame[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
         return filtered_data_frame
     

@@ -35,7 +35,6 @@ class BitgetDataUtil:
     bit_client: BitgetClienManager
     crypto_observe_list: List
     crypto_remove = []
-    data_frame_full: pandas.DataFrame = pandas.DataFrame()
     data_frame_bkp: pandas.DataFrame = pandas.DataFrame()
 
     def __init__(
@@ -52,22 +51,29 @@ class BitgetDataUtil:
 
         if load_from_previous_execution == True:
             self.data_frame_bkp = excel_util.load_dataframe()
-            self.data_frame_bkp[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
         
         if self.data_frame_bkp.empty:
             all_coins_df = self.bit_client.get_all_coins_filter_contract(productType=settings.FUTURE_CONTRACT)
             
             #Remove selected coins
-            all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df['baseCoin'].isin(self.crypto_remove)].index)
+            all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_remove)].index)
             
             if len(self.crypto_observe_list) == 0:
                 #All coins
-                self.data_frame_full = all_coins_df
+                self.data_frame_bkp = all_coins_df
             else:
                 #Mantener filas
-                self.data_frame_full = all_coins_df[all_coins_df['baseCoin'].isin(self.crypto_observe_list)]
+                self.data_frame_bkp = all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_observe_list)]
+
+            columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
+                                DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, DataFrameColum.TAKERFEERATE.value, DataFrameColum.VOLUMEPLACE.value ]  # Índices de las columnas que deseas mantener (0-indexed)
+            # Conservar solo las columnas indicadas en el columnas_a mantener
+            self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
+
+            #Columnas necesarias de arranque
             
-            self.data_frame_full[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
+
+
     
     def create_data_frame(self):
         
@@ -75,10 +81,10 @@ class BitgetDataUtil:
             data_frame = self.data_frame_bkp
         else:
             data_frame = pandas.DataFrame(data=None, index=self.crypto_observe_list)
-            data_frame[DataFrameColum.SYMBOL.value] = "-"
+            #data_frame[DataFrameColum.SYMBOL.value] = "-"
             data_frame[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
-            data_frame[DataFrameColum.BASE.value] = "-"
-            data_frame[DataFrameColum.QUOTE.value] = "-"
+            #data_frame[DataFrameColum.BASE.value] = "-"
+            #data_frame[DataFrameColum.QUOTE.value] = "-"
             data_frame[DataFrameColum.DATE.value] = "-"
             data_frame[DataFrameColum.PRICE_BUY.value] = "-"
             data_frame[DataFrameColum.PRICE_SELL.value] = "-"
@@ -87,6 +93,7 @@ class BitgetDataUtil:
             data_frame[DataFrameColum.LOCK.value] = "-"
             data_frame[DataFrameColum.LOOK.value] = False
             data_frame[DataFrameColum.FIRST_ITERATION.value] = True
+            data_frame[DataFrameColum.SIDE_TYPE.value] = "-"
 
             data_frame[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
             data_frame[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
@@ -101,20 +108,19 @@ class BitgetDataUtil:
             data_frame[DataFrameColum.NOTE_3.value] = "-"
             data_frame[DataFrameColum.NOTE_4.value] = "-"
             data_frame[DataFrameColum.NOTE_5.value] = "-"
-            data_frame[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
             
             data_frame = DataFrameCheckUtil.create_price_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_candle_trend_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_rsi_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_supertrend_columns(data_frame=data_frame)
+            #data_frame = DataFrameCheckUtil.create_supertrend_columns(data_frame=data_frame)
             data_frame = DataFrameCheckUtil.create_adx_columns(data_frame=data_frame)
             data_frame = DataFrameCheckUtil.create_ao_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=data_frame)
+            #data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
+            #data_frame = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_stoch_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_cci_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_tsi_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
+            #data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_trix_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_top_gainers_columns(data_frame=data_frame)
             #data_frame = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=data_frame)

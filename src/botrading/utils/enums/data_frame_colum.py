@@ -5,10 +5,21 @@ from src.botrading.utils.enums.colum_state_values import ColumStateValues
 
 
 class DataFrameColum(Enum):
+    #BITGET
 
-    SYMBOL = "SYMBOL"
-    BASE = "BASE"
-    QUOTE = "QUOTE"
+    SYMBOL = "symbol"
+    SYMBOLNAME = "symbolName"
+    SYMBOLTYPE = "symbolType"
+    TAKERFEERATE = "takerFeeRate"
+    VOLUMEPLACE = "volumePlace"
+    SIDE_TYPE = "SIDE_TYPE"
+
+
+    BASE = "baseCoin"
+    QUOTE = "quoteCoin"
+
+
+
     PRICE = "PRICE"
     CLOSE = "CLOSE"
     DATE = "DATE"
