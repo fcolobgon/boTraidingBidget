@@ -71,70 +71,52 @@ class BitgetDataUtil:
             self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
 
             #Columnas necesarias de arranque
-            
+            #self.data_frame_bkp[DataFrameColum.SYMBOL.value] = "-"
+            self.data_frame_bkp[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
+            #self.data_frame_bkp[DataFrameColum.BASE.value] = "-"
+            #self.data_frame_bkp[DataFrameColum.QUOTE.value] = "-"
+            self.data_frame_bkp[DataFrameColum.DATE.value] = "-"
+            self.data_frame_bkp[DataFrameColum.PRICE_BUY.value] = "-"
+            self.data_frame_bkp[DataFrameColum.PRICE_SELL.value] = "-"
+            self.data_frame_bkp[DataFrameColum.CLOSE.value] = "-"
+            self.data_frame_bkp[DataFrameColum.DATE_PRICE_BUY.value] = "-"
+            self.data_frame_bkp[DataFrameColum.LOCK.value] = "-"
+            self.data_frame_bkp[DataFrameColum.LOOK.value] = False
+            self.data_frame_bkp[DataFrameColum.FIRST_ITERATION.value] = True
+            self.data_frame_bkp[DataFrameColum.SIDE_TYPE.value] = "-"
 
+            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
+            self.data_frame_bkp[DataFrameColum.TAKE_PROFIT.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.TAKE_PROFIT_TOUCH.value] = False
+            self.data_frame_bkp[DataFrameColum.STOP_LOSS.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.STOP_LOSS_LEVEL.value] = 0.0
+
+            self.data_frame_bkp[DataFrameColum.NOTE.value] = "-"  
+            self.data_frame_bkp[DataFrameColum.NOTE_2.value] = "-"
+            self.data_frame_bkp[DataFrameColum.NOTE_3.value] = "-"
+            self.data_frame_bkp[DataFrameColum.NOTE_4.value] = "-"
+            self.data_frame_bkp[DataFrameColum.NOTE_5.value] = "-"
+
+            self.data_frame_bkp = DataFrameCheckUtil.create_price_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_candle_trend_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_supertrend_columns(data_frame=self.data_frame_bkp)
+            self.data_frame_bkp = DataFrameCheckUtil.create_adx_columns(data_frame=self.data_frame_bkp)
+            self.data_frame_bkp = DataFrameCheckUtil.create_ao_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_macd_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_stoch_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_cci_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_tsi_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_ma_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_trix_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_top_gainers_columns(data_frame=self.data_frame_bkp)
+            #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
 
     
-    def create_data_frame(self):
-        
-        if not self.data_frame_bkp.empty:
-            data_frame = self.data_frame_bkp
-        else:
-            data_frame = pandas.DataFrame(data=None, index=self.crypto_observe_list)
-            #data_frame[DataFrameColum.SYMBOL.value] = "-"
-            data_frame[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
-            #data_frame[DataFrameColum.BASE.value] = "-"
-            #data_frame[DataFrameColum.QUOTE.value] = "-"
-            data_frame[DataFrameColum.DATE.value] = "-"
-            data_frame[DataFrameColum.PRICE_BUY.value] = "-"
-            data_frame[DataFrameColum.PRICE_SELL.value] = "-"
-            data_frame[DataFrameColum.CLOSE.value] = "-"
-            data_frame[DataFrameColum.DATE_PRICE_BUY.value] = "-"
-            data_frame[DataFrameColum.LOCK.value] = "-"
-            data_frame[DataFrameColum.LOOK.value] = False
-            data_frame[DataFrameColum.FIRST_ITERATION.value] = True
-            data_frame[DataFrameColum.SIDE_TYPE.value] = "-"
 
-            data_frame[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
-            data_frame[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
-            data_frame[DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
-            data_frame[DataFrameColum.TAKE_PROFIT.value] = 0.0
-            data_frame[DataFrameColum.TAKE_PROFIT_TOUCH.value] = False
-            data_frame[DataFrameColum.STOP_LOSS.value] = 0.0
-            data_frame[DataFrameColum.STOP_LOSS_LEVEL.value] = 0.0
-
-            data_frame[DataFrameColum.NOTE.value] = "-"  
-            data_frame[DataFrameColum.NOTE_2.value] = "-"
-            data_frame[DataFrameColum.NOTE_3.value] = "-"
-            data_frame[DataFrameColum.NOTE_4.value] = "-"
-            data_frame[DataFrameColum.NOTE_5.value] = "-"
-            
-            data_frame = DataFrameCheckUtil.create_price_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_candle_trend_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_rsi_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_supertrend_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_adx_columns(data_frame=data_frame)
-            data_frame = DataFrameCheckUtil.create_ao_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_stoch_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_cci_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_tsi_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_trix_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_top_gainers_columns(data_frame=data_frame)
-            #data_frame = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=data_frame)
-            
-            data_frame = data_frame.reset_index(drop=True)
-
-            index = 0
-            for i in range(len(self.crypto_observe_list)):
-                observe = self.crypto_observe_list[i]
-                data_frame.loc[index + i, DataFrameColum.SYMBOL.value] = observe.symbol
-                data_frame.loc[index + i, DataFrameColum.BASE.value] = observe.baseAsset
-                data_frame.loc[index + i, DataFrameColum.QUOTE.value] = observe.quoteAsset
-     
-        return data_frame
     
     def get_crypto_observe_list(self):
         return self.crypto_observe_list
