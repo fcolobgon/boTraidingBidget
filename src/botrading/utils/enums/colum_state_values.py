@@ -9,6 +9,7 @@ class ColumStateValues(Enum):
     BUY = "BUY"
     NEW = "NEW"
     ERR_SELL = "ERR-SELL"
+    ERR_BUY = "ERR-BUY"
     BLCK_INS_MNY = "BLCK_INS_MNY"
 
     @classmethod

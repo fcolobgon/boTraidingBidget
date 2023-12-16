@@ -13,13 +13,12 @@ class DataFrameColum(Enum):
     TAKERFEERATE = "takerFeeRate"
     VOLUMEPLACE = "volumePlace"
     SIDE_TYPE = "SIDE_TYPE"
-
+    MONEY_SPENT = "MONEY_SPENT" 
+    SIZE = "SIZE" 
 
     BASE = "baseCoin"
     QUOTE = "quoteCoin"
-
-
-
+    
     PRICE = "PRICE"
     CLOSE = "CLOSE"
     DATE = "DATE"

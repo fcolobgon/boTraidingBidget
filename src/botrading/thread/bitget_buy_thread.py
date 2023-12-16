@@ -148,7 +148,7 @@ class BitgetBuyThreed(threading.Thread):
                 else:
                     data_frame_buy_now = self.apply_max_coin_buy(data_frame_buy_now)
 
-                    df_buyed = traiding_operations.logic_buy(clnt_bit=self.bit_client, df_buy=data_frame_buy_now, quantity_buy = self.quantity_buy_order)
+                    df_buyed = traiding_operations.logic_buy(clnt_bit=self.bit_client, df_buy=data_frame_buy_now, quantity_usdt = self.quantity_buy_order)
                     # logger.info("########################### COMPRA REALIZADA ########################### ")
 
                     self.merge_dataframes(update_data_frame=df_buyed)
