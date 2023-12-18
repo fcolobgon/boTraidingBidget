@@ -24,19 +24,19 @@ if __name__ == '__main__':
     
     excel_util.custom_init(settings.FILES_BASE_PATH)
 
-    bit_client = BitgetClienManager(test_mode = settings.BITGET_CLIENT_TEST_MODE, api_key = settings.API_KEY_BIT, api_secret = settings.API_SECRET_BIT, api_passphrase = settings.API_PASSPHRASE_BIT)
+    client_bit = BitgetClienManager(test_mode = settings.BITGET_CLIENT_TEST_MODE, api_key = settings.API_KEY_BIT, api_secret = settings.API_SECRET_BIT, api_passphrase = settings.API_PASSPHRASE_BIT)
 
     print("### START MAIN ###")
-    bitget_buy_threed = BitgetBuyThreed(bit_client = bit_client, strategy = strategy, max_coin_buy = settings.MAX_COIN_BUY, quantity_buy_order = settings.QUANTITY_BUY_ORDER, load_from_previous_execution = settings.LOAD_FROM_PREVIOUS_EXECUTION, observe_coin_list=settings.OBSERVE_COIN_LIST, remove_coin_list=settings.REMOVE_COIN_LIST)
+    bitget_buy_threed = BitgetBuyThreed(client_bit = client_bit, strategy = strategy, max_coin_buy = settings.MAX_COIN_BUY, quantity_buy_order = settings.QUANTITY_BUY_ORDER, load_from_previous_execution = settings.LOAD_FROM_PREVIOUS_EXECUTION, observe_coin_list=settings.OBSERVE_COIN_LIST, remove_coin_list=settings.REMOVE_COIN_LIST)
     bitget_buy_threed.start()
     bitget_buy_threed.wait_buy_thread_ready()
 
-    bitget_sell_threed = BitgetSellThreed(bit_client = bit_client, strategy = strategy, buy_thread = bitget_buy_threed)
+    bitget_sell_threed = BitgetSellThreed(client_bit = client_bit, strategy = strategy, buy_thread = bitget_buy_threed)
     bitget_sell_threed.start()
 
     """
     bit_market_client = BitgetClienManager(api_key = settings.MARKET_API_KEY_BIN, api_secret = settings.MARKET_SECRET_KEY_BIN)
     
-    telegram_bot = TelegramBot(bnb_client = bit_client, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
+    telegram_bot = TelegramBot(bnb_client = client_bit, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
     telegram_bot.start()
     """

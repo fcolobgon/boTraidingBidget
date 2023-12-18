@@ -20,6 +20,7 @@ from src.botrading.model.time_ranges import *
 from src.botrading.bit import BitgetClienManager
 from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils import excel_util
+from src.botrading.utils.text_util import textUtil
 from src.botrading.utils.enums.colum_state_values import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
@@ -32,14 +33,14 @@ import requests
 class BitgetDataUtil:
 
     quote_asset = botrading_constant.FUTURE_CONTRACT_USDT_UMCBL
-    bit_client: BitgetClienManager
+    client_bit: BitgetClienManager
     crypto_observe_list: List
     crypto_remove = []
     data_frame_bkp: pandas.DataFrame = pandas.DataFrame()
 
     def __init__(
         self,
-        bit_client: BitgetClienManager,
+        client_bit: BitgetClienManager,
         crypto_observe_default_list: List[str] = settings.OBSERVE_COIN_LIST,
         crypto_remove_list: List[str] = settings.REMOVE_COIN_LIST,
         load_from_previous_execution: bool = False,
@@ -47,17 +48,18 @@ class BitgetDataUtil:
     
         self.crypto_remove = crypto_remove_list
         self.crypto_observe_list = crypto_observe_default_list
-        self.bit_client = bit_client
+        self.client_bit = client_bit
 
         if load_from_previous_execution == True:
             self.data_frame_bkp = excel_util.load_dataframe()
         
         if self.data_frame_bkp.empty:
-            all_coins_df = self.bit_client.get_all_coins_filter_contract(productType=settings.FUTURE_CONTRACT)
+            all_coins_df = self.client_bit.get_all_coins_filter_contract(productType=settings.FUTURE_CONTRACT)
             
             #Remove selected coins
             all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_remove)].index)
             
+
             if len(self.crypto_observe_list) == 0:
                 #All coins
                 self.data_frame_bkp = all_coins_df
@@ -65,8 +67,17 @@ class BitgetDataUtil:
                 #Mantener filas
                 self.data_frame_bkp = all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_observe_list)]
 
-            columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
-                                DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, DataFrameColum.TAKERFEERATE.value, DataFrameColum.VOLUMEPLACE.value ]  # Índices de las columnas que deseas mantener (0-indexed)
+            #Solo se ejecuta en para modo TEST
+            if settings.BITGET_CLIENT_TEST_MODE == True:
+                all_coins_df[DataFrameColum.SYMBOL_TEST.value] = all_coins_df.apply(lambda row: textUtil.convert_text_mode_test(row[DataFrameColum.BASE.value], row[DataFrameColum.QUOTE.value], row[DataFrameColum.SYMBOL.value]), axis=1)
+                columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
+                                DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOL_TEST.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, 
+                                DataFrameColum.TAKERFEERATE.value, DataFrameColum.VOLUMEPLACE.value ]  # Índices de las columnas que deseas mantener (0-indexed)
+            else:
+                columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
+                                DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, DataFrameColum.TAKERFEERATE.value, 
+                                DataFrameColum.VOLUMEPLACE.value ]  # Índices de las columnas que deseas mantener (0-indexed)
+            
             # Conservar solo las columnas indicadas en el columnas_a mantener
             self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
 
@@ -84,6 +95,8 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.LOOK.value] = False
             self.data_frame_bkp[DataFrameColum.FIRST_ITERATION.value] = True
             self.data_frame_bkp[DataFrameColum.SIDE_TYPE.value] = "-"
+            self.data_frame_bkp[DataFrameColum.MONEY_SPENT.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.SIZE.value] = 0.0
 
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
@@ -128,7 +141,7 @@ class BitgetDataUtil:
         for ind in df_master.index:
             symbol = df_master[DataFrameColum.SYMBOL.value][ind]
 
-            prices_history = self.bit_client.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
+            prices_history = self.client_bit.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
                 "Open time",
                 "Open",
                 "High",
@@ -158,7 +171,7 @@ class BitgetDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                                 
@@ -215,7 +228,7 @@ class BitgetDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                     
@@ -248,7 +261,7 @@ class BitgetDataUtil:
             try:
             
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                     
@@ -291,7 +304,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -327,7 +340,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -348,7 +361,7 @@ class BitgetDataUtil:
         
         for ind in data_frame.index:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            currentPrice = self.bit_client.get_price_for_symbol(symbol)
+            currentPrice = self.client_bit.get_price_for_symbol(symbol)
 
             data_frame.loc[ind, DataFrameColum.PRICE_BUY.value] = currentPrice
         
@@ -373,7 +386,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -425,7 +438,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -479,7 +492,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -521,7 +534,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
                 
@@ -565,7 +578,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -607,7 +620,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -641,7 +654,7 @@ class BitgetDataUtil:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
             
             previous_price = data_frame[DataFrameColum.PRICE_BUY.value][ind]
-            currentPrice = self.bit_client.get_price_for_symbol(symbol)
+            currentPrice = self.client_bit.get_price_for_symbol(symbol)
             profit =  (float(currentPrice)*100.0 / float(previous_price))-100
 
             previous_profit = data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value]
@@ -670,7 +683,7 @@ class BitgetDataUtil:
             try:
                 
                 if prices_history_dict == None:
-                    prices_history = self.bit_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
                 else:
                     prices_history = prices_history_dict[symbol]
 
@@ -771,7 +784,7 @@ class BitgetDataUtil:
 
         for ind in data_frame.index:
             symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
-            prices_history_24h = self.bit_client.get_change_price_24h(symbol)
+            prices_history_24h = self.client_bit.get_change_price_24h(symbol)
             dict_values[symbol] = prices_history_24h
         
         now =  datetime.now()

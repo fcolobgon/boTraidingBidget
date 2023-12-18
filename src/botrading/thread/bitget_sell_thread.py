@@ -19,9 +19,9 @@ class BitgetSellThreed(threading.Thread):
 
     strategy:Strategy
 
-    bit_client: BitgetClienManager
+    client_bit: BitgetClienManager
 
-    binance_data_util: BitgetDataUtil
+    bitget_data_util: BitgetDataUtil
     
     stop_thread = False
     
@@ -29,7 +29,7 @@ class BitgetSellThreed(threading.Thread):
 
     def __init__(
         self,
-        bit_client: BitgetClienManager,
+        client_bit: BitgetClienManager,
         buy_thread: BitgetBuyThreed = None,
         strategy: Strategy = None
     ):
@@ -37,9 +37,9 @@ class BitgetSellThreed(threading.Thread):
         threading.Thread.__init__(self)
         self.thread_name = strategy.name + " SELL"
         self.strategy = strategy
-        self.bit_client = bit_client
+        self.client_bit = client_bit
         self.buy_thread = buy_thread
-        self.binance_data_util = buy_thread.get_binance_data_util()
+        self.bitget_data_util = buy_thread.get_bitget_data_util()
 
     def run(self):
 
@@ -60,8 +60,8 @@ class BitgetSellThreed(threading.Thread):
 
             if self.check_dataframe_contains_buy_coins():
                 
-                data_frame_for_sell = self.strategy.apply_sell(binance_data_util=self.binance_data_util, data_frame=self.buy_thread.get_data_frame())
-                                      
+                data_frame_for_sell = self.strategy.apply_sell(bitget_data_util=self.bitget_data_util, data_frame=self.buy_thread.get_data_frame())
+
                 if data_frame_for_sell.empty == False:
 
                     rules = [ColumStateValues.READY_FOR_SELL]
@@ -71,10 +71,8 @@ class BitgetSellThreed(threading.Thread):
                     if data_frame_sell_now.empty:
                         print("No hay monedas para vender ahora!!")
                         self.buy_thread.merge_dataframes(update_data_frame=data_frame_for_sell)
-
                     else:
-
-                        df_sell = traiding_operations.logic_sell(clnt_bnb=self.bit_client, df_sell=data_frame_sell_now)
+                        df_sell = traiding_operations.logic_sell(clnt_bit=self.client_bit, df_sell=data_frame_sell_now)
 
                         self.buy_thread.merge_dataframes(update_data_frame=df_sell)
 

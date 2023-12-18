@@ -19,7 +19,7 @@ class BitgetBuyThreed(threading.Thread):
 
     thread_name: str
 
-    bit_client: BitgetClienManager
+    client_bit: BitgetClienManager
 
     bitget_data_util: BitgetDataUtil
 
@@ -43,7 +43,7 @@ class BitgetBuyThreed(threading.Thread):
 
     def __init__(
         self,
-        bit_client: BitgetClienManager,
+        client_bit: BitgetClienManager,
         max_coin_buy: int = 5,
         quantity_buy_order: int = 100,
         observe_coin_list: List[str] = [],
@@ -57,10 +57,10 @@ class BitgetBuyThreed(threading.Thread):
         self.quantity_buy_order = quantity_buy_order
         self.thread_name = strategy.name + " BUY"
         self.strategy = strategy
-        self.bit_client = bit_client
+        self.client_bit = client_bit
         
         self.bitget_data_util = BitgetDataUtil(
-            bit_client=bit_client,
+            client_bit=client_bit,
             crypto_observe_default_list=observe_coin_list,
             load_from_previous_execution=load_from_previous_execution,
             crypto_remove_list=remove_coin_list
@@ -81,22 +81,22 @@ class BitgetBuyThreed(threading.Thread):
 
     def merge_dataframes(self, update_data_frame: pandas.DataFrame):
 
+        print (update_data_frame)
+
         if self.buy_thread_readry:
             self.lock_buy_thread()
 
             #Sustituye las lineas Slave con Master
             self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
 
-            #Detectamos nueva cripto y la incluimos en Master
-            new_crypto_data_frame = self.data_frame[~self.data_frame['baseCoin'].isin(update_data_frame['baseCoin'])]
-            self.data_frame = pandas.concat([self.data_frame, new_crypto_data_frame], ignore_index=True)
+            excel_util.save_data_frame(data_frame=self.data_frame, exel_name=self.data_frame_name)
 
             self.unlock_buy_thread()
             return self.data_frame
         else:
             self.wait_buy_thread_ready()
             #Sustituye las lineas Slave con Master
-            self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
+            self.merge_dataframes(update_data_frame=update_data_frame)
 
     def wait_buy_thread_ready(self):
 
@@ -148,7 +148,7 @@ class BitgetBuyThreed(threading.Thread):
                 else:
                     data_frame_buy_now = self.apply_max_coin_buy(data_frame_buy_now)
 
-                    df_buyed = traiding_operations.logic_buy(clnt_bit=self.bit_client, df_buy=data_frame_buy_now, quantity_usdt = self.quantity_buy_order)
+                    df_buyed = traiding_operations.logic_buy(clnt_bit=self.client_bit, df_buy=data_frame_buy_now, quantity_usdt = self.quantity_buy_order)
                     # logger.info("########################### COMPRA REALIZADA ########################### ")
 
                     self.merge_dataframes(update_data_frame=df_buyed)

@@ -39,4 +39,7 @@ class Strategy:
         filtered_data_frame = filtered_data_frame.query(state_query)
 
 
+        filtered_data_frame[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+
         return filtered_data_frame

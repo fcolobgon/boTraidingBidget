@@ -8,6 +8,7 @@ class DataFrameColum(Enum):
     #BITGET
 
     SYMBOL = "symbol"
+    SYMBOL_TEST = "symbol_test"
     SYMBOLNAME = "symbolName"
     SYMBOLTYPE = "symbolType"
     TAKERFEERATE = "takerFeeRate"

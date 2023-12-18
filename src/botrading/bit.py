@@ -16,7 +16,7 @@ class BitgetClienManager:
 
     retry_delay = 60
     retry_delay_attempt = 5
-    bit_client: Client
+    client_bit: Client
     buy_sell: bool
 
     # OJO! NO TOCAR ESTE CONSTRUCTOR
@@ -26,7 +26,7 @@ class BitgetClienManager:
             self.buy_sell = False
         else:
             self.buy_sell = True
-        self.bit_client = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=False)
+        self.client_bit = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=False)
 
         # Check OS
         my_os = platform.system()
@@ -36,20 +36,20 @@ class BitgetClienManager:
             from src.botrading.utils.binance_client_util import BinanceClientUtil
             
             #Synchronise Time for Win
-            BinanceClientUtil.synchronise_times(self.bit_client)
+            BinanceClientUtil.synchronise_times(self.client_bit)
         """
     
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
     def get_all_coins_filter_contract(self, productType):
 
-        dict_symbol_inf = self.bit_client.mix_get_symbols_info(productType = productType )['data']
+        dict_symbol_inf = self.client_bit.mix_get_symbols_info(productType = productType )['data']
         df_symbol_inf = pandas.DataFrame(dict_symbol_inf)
 
         return df_symbol_inf
     
     def orde_buy_for_market(self,symbol,marginCoin: str = botrading_constant.PAIR_ASSET_DEFAULT, size: float = 0):
 
-        self.bit_client.mix_place_order(symbol,marginCoin, size, side= 'Buy',orderType = 'market', price='')
+        self.client_bit.mix_place_order(symbol,marginCoin, size, side= 'Buy',orderType = 'market', price='')
 
         """
         symbol: El símbolo del activo subyacente.

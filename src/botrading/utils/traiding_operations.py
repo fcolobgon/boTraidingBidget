@@ -24,24 +24,27 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
         margin_coin = settings.MARGINCOIN
 
-        price_convert_coin, price_coin_buy = TradingUtil.convert_price_usdt_to_coin(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, symbol=symbol)
-
-        #Solo se ejecuta en para modo TEST
-        if settings.BITGET_CLIENT_TEST_MODE == True:
-            margin_coin = 'S' + settings.MARGINCOIN
-            symbol = textUtil.convert_text_mode_test(base, quote, symbol)
-
-        print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
         try:
-            order = clnt_bit.bit_client.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
+            price_convert_coin, price_coin_buy = TradingUtil.convert_price_usdt_to_coin(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, symbol=symbol)
+
+            #Solo se ejecuta en para modo TEST
+            if settings.BITGET_CLIENT_TEST_MODE == True:
+                margin_coin = 'S' + settings.MARGINCOIN
+                symbol = df_buy.loc[ind,DataFrameColum.SYMBOL_TEST.value]
+
+            print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
+        
+            order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
+
+            print (order['msg'])
             
-            if order is None:
-                print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
-            else:
+            if order['msg'] == 'success':
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
                 df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   
                 df_buy.loc[ind,DataFrameColum.SIZE.value] = price_coin_buy
                 df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
+            else:
+                print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
 
         except Exception as e:
             print(f"Error al realizar la orden de compra para {symbol}: {e}")
@@ -73,18 +76,17 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
         #Solo se ejecuta en para modo TEST
         if settings.BITGET_CLIENT_TEST_MODE == True:
             margin_coin = 'S' + settings.MARGINCOIN
-            symbol = textUtil.convert_text_mode_test(base, quote, symbol)
+            symbol = df_sell.loc[ind,DataFrameColum.SYMBOL_TEST.value]
 
-        price_convert_coin_to_usdt = TradingUtil.convert_price_coin_to_usdt(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, price_convert_coin = price_coin_buy, symbol=symbol)
+        price_convert_coin_to_usdt, price_coin = TradingUtil.convert_price_coin_to_usdt(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, price_convert_coin = price_coin_buy, symbol=symbol)
 
         order = TradingUtil.sell_with_retries(clnt_bit, symbol, margin_coin, price_convert_coin_to_usdt, sideType)
-        order = order["data"]
 
-        if order is None:
-            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
-        else:
+        if order['msg'] == 'success':
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
-            df_sell[DataFrameColum.PRICE_SELL.value][ind] = order.price
+            df_sell[DataFrameColum.PRICE_SELL.value][ind] = price_coin
+        else:
+            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
 
     excel_util.save_sell_file(df_sell)
 
@@ -121,12 +123,12 @@ class TradingUtil:
         cont = 1
         #!Reintentos
         while order is None and cont < max_retries:
-            print("-------------------" + str(cont) + " REINTENTO VENTA " + symbol + " CANTIDAD " + price_convert_coin_to_usdt + "-------------------")
+            print("-------------------" + str(cont) + " REINTENTO VENTA " + symbol + " CANTIDAD " + str(price_convert_coin_to_usdt) + "-------------------")
             
-            order = clnt_bit.bit_client.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin_to_usdt, side = 'close_' + sideType, orderType = 'market')
+            order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin_to_usdt, side = 'close_' + sideType, orderType = 'market')
             print("INTENTO DE VENTA NUMERO " + str(cont) + " ORDEN " + str(order))
 
-            if order:
+            if order['msg'] == 'success':
                 return order
 
             #qty_diff = TradingUtil.diff_precision_decimal(qty)
@@ -207,19 +209,19 @@ class TradingUtil:
     def convert_price_usdt_to_coin(clnt_bit: BitgetClienManager, quantity_usdt, symbol):
 
         # Obtener el precio actual de la moneda en USDT
-        price_coin_buy = float(clnt_bit.bit_client.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
+        price_coin_buy = float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
 
         # Realizar la conversión de USDT a la moneda específica
         return float(quantity_usdt) / float(price_coin_buy), price_coin_buy
 
     @staticmethod
-    def convert_price_coin_to_usdt(clnt_bit: BitgetClienManager, quantity_usdt, price_coin_buy, symbol):
+    def convert_price_coin_to_usdt(clnt_bit: BitgetClienManager, quantity_usdt, price_convert_coin, symbol):
 
-        qtty_coin_buy = float(quantity_usdt) / float(price_coin_buy)
+        qtty_coin_buy = float(quantity_usdt) / float(price_convert_coin)
 
         # Obtener el precio actual de la moneda en USDT
-        price_coin_usdt = float(clnt_bit.bit_client.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
+        price_coin = float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
 
         # Realizar la conversión de USDT a la moneda específica
-        return float(qtty_coin_buy) * float(price_coin_usdt)
+        return float(qtty_coin_buy) * float(price_coin), price_coin
 
