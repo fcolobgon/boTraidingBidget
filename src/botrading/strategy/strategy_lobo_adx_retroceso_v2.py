@@ -33,7 +33,6 @@ class Strategy:
         if reset_data_frame.empty == False:
             
             data_frame[DataFrameColum.LOOK.value] = False
-            data_frame[DataFrameColum.SIDE_TYPE.value] = "-"
             data_frame[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
             data_frame[DataFrameColum.STOP_LOSS_LEVEL.value] = 0
             
@@ -157,7 +156,6 @@ class Strategy:
         data_frame[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
         data_frame[DataFrameColum.STOP_LOSS_LEVEL.value] = 0
         data_frame[DataFrameColum.LOOK.value] = False
-        data_frame[DataFrameColum.SIDE_TYPE.value] = "-"
         TelegramNotify.notify_sell(settings=settings, dataframe=data_frame)
         return data_frame
     
