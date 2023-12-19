@@ -105,7 +105,7 @@ class Strategy:
         
         Strategy.print_data_frame(message="EJECUCION COMPRA ", data_frame=buy_data_frame)
         
-        query_short = DataFrameColum.SIDE_TYPE.value + " == " + FutureValues.SIDE_TYPE_SHORT.value + " and " + DataFrameColum.PRICE_BUY.value + " > " + DataFrameColum.SOPORTES.value
+        query_short = DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "' and " + DataFrameColum.PRICE_BUY.value + " > " + DataFrameColum.SOPORTES.value
         buy_data_frame_short = buy_data_frame_short.query(query_short)
         
         if buy_data_frame_short.empty == False:
@@ -113,7 +113,7 @@ class Strategy:
             TelegramNotify.notify_buy(settings=settings, dataframe=buy_data_frame_short)
             return buy_data_frame_short
         
-        query_long =  DataFrameColum.SIDE_TYPE.value + " == " + FutureValues.SIDE_TYPE_LONG.value + " and " + DataFrameColum.PRICE_BUY.value + " < " + DataFrameColum.SOPORTES.value
+        query_long =  DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "' and " + DataFrameColum.PRICE_BUY.value + " < " + DataFrameColum.SOPORTES.value
         buy_data_frame_long = buy_data_frame_long.query(query_long)
         
         if buy_data_frame_long.empty == False:
