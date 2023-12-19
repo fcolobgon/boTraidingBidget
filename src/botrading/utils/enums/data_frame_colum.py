@@ -16,6 +16,7 @@ class DataFrameColum(Enum):
     SIDE_TYPE = "SIDE_TYPE"
     MONEY_SPENT = "MONEY_SPENT" 
     SIZE = "SIZE" 
+    LEVEREAGE = "LEVEREAGE"
 
     BASE = "baseCoin"
     QUOTE = "quoteCoin"

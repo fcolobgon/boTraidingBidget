@@ -105,6 +105,8 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.TAKE_PROFIT_TOUCH.value] = False
             self.data_frame_bkp[DataFrameColum.STOP_LOSS.value] = 0.0
             self.data_frame_bkp[DataFrameColum.STOP_LOSS_LEVEL.value] = 0.0
+            
+            self.data_frame_bkp[DataFrameColum.LEVEREAGE.value] = 0  
 
             self.data_frame_bkp[DataFrameColum.NOTE.value] = "-"  
             self.data_frame_bkp[DataFrameColum.NOTE_2.value] = "-"

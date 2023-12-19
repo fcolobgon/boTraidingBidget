@@ -22,6 +22,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         base = df_buy.loc[ind,DataFrameColum.BASE.value]
         quote = df_buy.loc[ind,DataFrameColum.QUOTE.value]
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
+        levereage = df_buy.loc[ind,DataFrameColum.LEVEREAGE.value]
         margin_coin = settings.MARGINCOIN
 
         try:
@@ -33,6 +34,13 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 symbol = df_buy.loc[ind,DataFrameColum.SYMBOL_TEST.value]
 
             print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
+            
+            if levereage > 0:
+                try:
+                    clnt_bit.client_bit.mix_adjust_margintype(symbol=symbol, marginCoin=margin_coin, marginMode=settings.MARGIN_MODE)
+                except Exception as e:
+                    print(f"Error al realizar apalancamiento {symbol}: {e}")
+                    continue
         
             order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
             

@@ -89,10 +89,12 @@ class Strategy:
                 if ao_asc:
                     
                     filtered_data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                    filtered_data_frame.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
                     
                 else:
                     
                     filtered_data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                    filtered_data_frame.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
 
             Strategy.print_data_frame(message="SOPORTES CALCULADOS", data_frame=filtered_data_frame)
 
@@ -170,7 +172,7 @@ class Strategy:
             print(
                 data_frame[
                     [
-                        DataFrameColum.SYMBOL.value,
+                        DataFrameColum.BASE.value,
                         DataFrameColum.ADX_ANGLE.value,
                         DataFrameColum.AO_ASCENDING.value,
                         DataFrameColum.SOPORTES.value,
