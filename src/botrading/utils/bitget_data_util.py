@@ -126,7 +126,7 @@ class BitgetDataUtil:
             #self.data_frame_bkp = DataFrameCheckUtil.create_ma_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_trix_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_top_gainers_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
+            self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
 
     
 

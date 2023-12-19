@@ -52,8 +52,6 @@ class Strategy:
         filtered_data_frame = bitget_data_util.updating_adx(time_range=time_range, data_frame=filtered_data_frame, prices_history_dict=prices_history)
         filtered_data_frame = bitget_data_util.updating_ao(time_range=time_range, data_frame=filtered_data_frame, prices_history_dict=prices_history)
         
-        filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)
-        
         Strategy.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=filtered_data_frame)
         
         #query = DataFrameColum.AO_ASCENDING.value + " == True"
@@ -62,6 +60,9 @@ class Strategy:
 
         query = DataFrameColum.ADX_ANGLE.value + " < 110"
         filtered_data_frame = filtered_data_frame.query(query)
+        
+        filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)
+        
         Strategy.print_data_frame(message="DATOS COMPRA ADX_ANGLE FILTRADO", data_frame=filtered_data_frame)
         
         if filtered_data_frame.empty == False:
