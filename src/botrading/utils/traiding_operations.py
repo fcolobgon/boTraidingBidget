@@ -35,8 +35,6 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
             print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
         
             order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
-
-            print (order['msg'])
             
             if order['msg'] == 'success':
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
