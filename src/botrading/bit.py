@@ -1,7 +1,7 @@
 from multiprocessing.connection import wait
 import platform
 import pandas
-import time
+from datetime import datetime, timedelta
 from datetime import datetime
 
 from tenacity import retry, stop_after_attempt, stop_after_delay
@@ -46,6 +46,48 @@ class BitgetClienManager:
         df_symbol_inf = pandas.DataFrame(dict_symbol_inf)
 
         return df_symbol_inf
+    
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_historial_x_day_ago(self, symbol, x_days, interval, retry = 0, limit:int = 500) -> pandas.DataFrame:
+        
+        endTime = datetime.now()
+        startTime = endTime - timedelta(days=x_days)
+        
+        #startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+        #endTime = endTime.replace(hour=0, minute=0, second=0, microsecond=0)
+        startTime_ms = int(startTime.timestamp() * 1000)
+        endTime_ms = int(endTime.timestamp() * 1000)
+
+        temp_data = self.client_bit.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market')
+            
+        df_history_symbol = pandas.DataFrame(
+            temp_data,
+            columns=[
+                "Open time",
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Volume",
+                "Close time"
+            ],
+        )
+
+        # df_history_symbol.insert(column="isNew", value=isNew,  loc=1, allow_duplicates=False)
+
+        return df_history_symbol
+    
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_price_for_symbol(self, symbol: str) -> float:
+        """Devuelve el precio de una moneda asociada a su par
+
+        Args:
+            symbol (str): Simbolo de la moneda y par, ej, para saber el precio de BTC en USDT -> BTCUSDT
+
+        Returns:
+            float: Precio actual de la moneda en formato FLOAT
+        """
+        return float(self.client_bit.mix_get_market_price(symbol=symbol)["data"]["markPrice"])
     
     def orde_buy_for_market(self,symbol,marginCoin: str = botrading_constant.PAIR_ASSET_DEFAULT, size: float = 0):
 

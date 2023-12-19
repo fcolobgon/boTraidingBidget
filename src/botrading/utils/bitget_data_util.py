@@ -148,12 +148,7 @@ class BitgetDataUtil:
                 "Low",
                 "Close",
                 "Volume",
-                "Close time",
-                "Quote asset volume",
-                "Number of trades",
-                "Taker buy base asset volume",
-                "Taker buy quote asset volume",
-                "Ignore"
+                "Close time"
                 ]]
             
             dict_values[symbol] = prices_history
