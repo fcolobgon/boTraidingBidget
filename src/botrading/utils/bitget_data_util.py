@@ -654,7 +654,7 @@ class BitgetDataUtil:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
             
             previous_price = data_frame[DataFrameColum.PRICE_BUY.value][ind]
-            currentPrice = self.client_bit.get_price_for_symbol(symbol)
+            currentPrice = self.client_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last']
             profit =  (float(currentPrice)*100.0 / float(previous_price))-100
 
             previous_profit = data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value]
