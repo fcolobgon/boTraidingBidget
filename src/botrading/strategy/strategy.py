@@ -45,13 +45,14 @@ class Strategy:
         look_data_frame = filtered_data_frame
         
         filtered_data_frame = filtered_data_frame.query(DataFrameColum.LOOK.value + " == False")        
-        filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)   
-        
+           
         time_range = TimeRanges("HOUR_4")
         
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range)
         filtered_data_frame = bitget_data_util.updating_adx(time_range=time_range, data_frame=filtered_data_frame, prices_history_dict=prices_history)
         filtered_data_frame = bitget_data_util.updating_ao(time_range=time_range, data_frame=filtered_data_frame, prices_history_dict=prices_history)
+        
+        filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)
         
         Strategy.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=filtered_data_frame)
         
