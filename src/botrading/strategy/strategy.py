@@ -58,15 +58,13 @@ class Strategy:
         #filtered_data_frame = filtered_data_frame.query(query)
         #Strategy.print_data_frame(message="DATOS COMPRA AO_ASCENDING FILTRADO", data_frame=filtered_data_frame)
 
-        query = DataFrameColum.ADX_ANGLE.value + " < 110"
+        query = DataFrameColum.ADX_ANGLE.value + " > 0" +" and " + DataFrameColum.ADX_ANGLE.value + " < 110"
         filtered_data_frame = filtered_data_frame.query(query)
-        
-        filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)
-        
         Strategy.print_data_frame(message="DATOS COMPRA ADX_ANGLE FILTRADO", data_frame=filtered_data_frame)
         
         if filtered_data_frame.empty == False:
             
+            filtered_data_frame = bitget_data_util.updating_price(data_frame = filtered_data_frame)
             filtered_data_frame[DataFrameColum.LOOK.value] = True
             
             for ind in filtered_data_frame.index:
