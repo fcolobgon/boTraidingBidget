@@ -212,3 +212,4 @@ cython_debug/
 /configs/settings-emi.toml
 /status/*
 /.metadata
+/configs/settings.toml
