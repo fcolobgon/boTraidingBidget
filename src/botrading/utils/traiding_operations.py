@@ -36,8 +36,11 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
             print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
             
             if levereage > 0:
+
                 try:
                     clnt_bit.client_bit.mix_adjust_margintype(symbol=symbol, marginCoin=margin_coin, marginMode=settings.MARGIN_MODE)
+                    order_leverage = clnt_bit.client_bit.mix_adjust_leverage(symbol=symbol, marginCoin=margin_coin, leverage=str(levereage), holdSide='single_hold')
+                    print(order_leverage)
                 except Exception as e:
                     print(f"Error al realizar apalancamiento {symbol}: {e}")
                     continue
