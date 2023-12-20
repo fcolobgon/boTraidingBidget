@@ -26,6 +26,11 @@ class Strategy:
     @staticmethod
     def apply_buy(bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
+        data_frame[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+        data_frame[DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+        data_frame[DataFrameColum.LEVEREAGE.value] = 5
+        return data_frame
+        
         rules = [ColumStateValues.SELL]
         state_query = RuleUtils.get_rules_search_by_states(rules)
         reset_data_frame = data_frame.query(state_query)
