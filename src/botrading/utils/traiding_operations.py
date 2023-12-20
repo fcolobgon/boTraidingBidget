@@ -18,11 +18,12 @@ from configs.config import settings as settings
 def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
 
     for ind in df_buy.index:
-        symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]
-        base = df_buy.loc[ind,DataFrameColum.BASE.value]
-        quote = df_buy.loc[ind,DataFrameColum.QUOTE.value]
+        symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]        
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
-        levereage = df_buy.loc[ind,DataFrameColum.LEVEREAGE.value]
+        levereage = str(df_buy.loc[ind,DataFrameColum.LEVEREAGE.value])
+        percentage_profit_flag = df_buy.loc[ind,DataFrameColum.PERCENTAGE_PROFIT_FLAG.value]
+        takeProfit = str(df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value])
+        stopLoss = str(df_buy.loc[ind,DataFrameColum.STOP_LOSS.value])
         margin_coin = settings.MARGINCOIN
 
         try:
@@ -39,14 +40,17 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
 
                 try:
                     clnt_bit.client_bit.mix_adjust_margintype(symbol=symbol, marginCoin=margin_coin, marginMode=settings.MARGIN_MODE)
-                    order_leverage = clnt_bit.client_bit.mix_adjust_leverage(symbol=symbol, marginCoin=margin_coin, leverage=str(levereage), holdSide=sideType) 
+                    order_leverage = clnt_bit.client_bit.mix_adjust_leverage(symbol=symbol, marginCoin=margin_coin, leverage=levereage, holdSide=sideType) 
                     print(order_leverage)
                 except Exception as e:
                     print(f"Error al realizar apalancamiento {symbol}: {e}")
                     continue
         
-            order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
-            
+            if percentage_profit_flag:
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
+            else:
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+                
             if order['msg'] == 'success':
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
                 df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   

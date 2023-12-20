@@ -9,11 +9,12 @@ from math import atan
 import time
 from collections import Counter
 
-
+import ta
 import ta.trend as trend
 from ta.trend import ADXIndicator
 import pandas_ta 
 
+from src.botrading.utils.math_calc_util import MathCal_util
 from src.botrading.constants import botrading_constant
 from src.botrading.model.indocators import *
 from src.botrading.model.time_ranges import *
@@ -98,6 +99,7 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.MONEY_SPENT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.SIZE.value] = 0.0
 
+            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
@@ -313,11 +315,11 @@ class BitgetDataUtil:
                 adx = ADXIndicator(high = prices_high, low = prices_low, close = prices_close, window= series).adx()
                 adx_numpy = numpy.array(adx)
                 adx_numpy = adx_numpy[~numpy.isnan(adx_numpy)]
-                data_frame[DataFrameColum.ADX.value][ind] = adx_numpy
+                #data_frame[DataFrameColum.ADX.value][ind] = adx_numpy
                 data_frame.loc[ind, DataFrameColum.ADX_LAST.value] = self.get_last_element(element_list = adx_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.ADX_ASCENDING.value] = self.list_is_ascending(check_list = adx_numpy, ascending_count = ascending_count, previous_period = previous_period)
                 #data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = self.angle_one_line(line_points = adx_numpy, time_points = open_time_arr, time_range = time_range)
-                #data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = self.adx_angle(list_adx = adx_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = self.adx_angle(list_adx = adx_numpy, previous_period = previous_period)
                 
                                                                     
             except Exception as e:
@@ -344,7 +346,7 @@ class BitgetDataUtil:
                 ao = pandas_ta.ao(high = prices_history['High'].astype(float), low = prices_history['Low'].astype(float))
                 ao_numpy = numpy.array(ao)
                 ao_numpy = ao_numpy[~numpy.isnan(ao_numpy)]
-                data_frame[DataFrameColum.AO.value][ind] = ao_numpy
+                #data_frame[DataFrameColum.AO.value][ind] = ao_numpy
                 data_frame.loc[ind, DataFrameColum.AO_LAST.value] = self.get_last_element(element_list = ao_numpy ,previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.AO_ASCENDING.value] =  self.list_is_ascending(check_list = ao_numpy, ascending_count = ascending_count, previous_period = previous_period)
 
@@ -362,7 +364,59 @@ class BitgetDataUtil:
 
             data_frame.loc[ind, DataFrameColum.PRICE_BUY.value] = currentPrice
         
-        return data_frame        
+        return data_frame  
+    
+    def updating_impulse_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
+        
+        fast=config_macd.fast
+        slow=config_macd.slow
+        signal=config_macd.signal
+        
+        chars = "MACDh_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        blue_line = "MACD_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        red_line = "MACDs_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        
+        data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
+                        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+
+            try:
+                
+                if prices_history_dict == None:
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                else:
+                    prices_history = prices_history_dict[symbol]
+                
+                prices_close = prices_history['Close'].astype(float)
+                ta.add_momentum_ta()
+                macd =  pandas_ta.macd(close = prices_close, fast=fast, slow=slow, signal=signal)
+                
+                macd_numpy = numpy.array(macd[blue_line])
+                macd_h_numpy = numpy.array(macd[chars])
+                macd_s_numpy = numpy.array(macd[red_line])
+                
+                macd_numpy = macd_numpy[~numpy.isnan(macd_numpy)]
+                macd_h_numpy = macd_h_numpy[~numpy.isnan(macd_h_numpy)]
+                macd_s_numpy = macd_s_numpy[~numpy.isnan(macd_s_numpy)]
+        
+                #data_frame[DataFrameColum.MACD_BAR_CHART.value][ind] = macd_h_numpy
+                #data_frame[DataFrameColum.MACD_GOOD_LINE.value][ind] = macd_numpy
+                #data_frame[DataFrameColum.MACD_BAD_LINE.value][ind] = macd_s_numpy
+                data_frame.loc[ind, DataFrameColum.MACD_LAST.value] = self.get_last_element(element_list = macd_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_LAST_CHART.value] = self.get_last_element(element_list = macd_h_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_PREVIOUS_CHART.value] = macd_h_numpy[-2]
+                data_frame.loc[ind, DataFrameColum.MACD_CHART_ASCENDING.value] = self.list_is_ascending(check_list = macd_h_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_ASCENDING.value] = self.list_is_ascending(check_list = macd_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy, ascending_count, previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_ZERO.value] = self.cruce_zero(macd_h_numpy)
+                
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "MACD", e)
+                continue
+        
+        return data_frame       
     
     def updating_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
@@ -804,6 +858,40 @@ class BitgetDataUtil:
             data_frame[DataFrameColum.TAKE_PROFIT.value][ind] = take_profit
         
         return data_frame
+    
+    def adx_angle(self, list_adx:numpy=[], previous_period:int = 0) -> float:
+        
+        if previous_period > 0:
+            list_adx = list_adx[previous_period:]
+            
+        pos_adx_3 = list_adx[-3]
+        pos_adx_2 = list_adx[-2]
+        pos_adx_1 = list_adx[-1]
+        
+        if (pos_adx_3 > pos_adx_2) and (pos_adx_2 < pos_adx_1):
+
+            list_data_prev = [pos_adx_3, pos_adx_2]
+            angle_prev = float(MathCal_util.calculate_angle(list_data_prev, int_eje_x = 1 ))
+
+            list_data_crrnt = [pos_adx_2, pos_adx_1]
+            angle_crrnt = float(MathCal_util.calculate_angle(list_data_crrnt, int_eje_x = 1 ))
+
+            sum_angles = 180 - (abs(angle_prev) + angle_crrnt)
+            
+        elif (pos_adx_1 > pos_adx_2) and (pos_adx_2 < pos_adx_3):
+
+            list_data_prev = [pos_adx_3, pos_adx_2]
+            angle_prev = float(MathCal_util.calculate_angle(list_data_prev, int_eje_x = 1 ))
+
+            list_data_crrnt = [pos_adx_2, pos_adx_1]
+            angle_crrnt = float(MathCal_util.calculate_angle(list_data_crrnt, int_eje_x = 1 ))
+
+            sum_angles = 180 - (abs(angle_prev) + angle_crrnt)
+            
+        else:
+            return pandas.NaT
+        
+        return sum_angles
     
     def print_error_updating_indicator(self, symbol, indicator, e):
         
