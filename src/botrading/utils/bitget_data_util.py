@@ -25,6 +25,7 @@ from src.botrading.utils.text_util import textUtil
 from src.botrading.utils.enums.colum_state_values import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
+from src.botrading.utils.enums.future_values import FutureValues
 
 from configs.config import settings as settings
 
@@ -469,6 +470,71 @@ class BitgetDataUtil:
                 continue
         
         return data_frame 
+
+    def updating_impulse_macd_lazybear (self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
+        """
+        Calcula el indicador Impulse MACD LazyBear para un conjunto de datos de precios.
+
+        Parámetros:
+            data: Un DataFrame de Pandas que contiene los precios de cierre.
+            fast_period: El período de la media móvil exponencial rápida.
+            slow_period: El período de la media móvil exponencial lenta.
+            signal_period: El período de la media móvil exponencial de la señal.
+
+        Devuelve:
+            Un DataFrame de Pandas que contiene los valores del indicador Impulse MACD LazyBear.
+        """        
+        fast=config_macd.fast
+        slow=config_macd.slow
+        signal=config_macd.signal
+        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+
+            try:
+                
+                if prices_history_dict == None:
+                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                else:
+                    prices_history = prices_history_dict[symbol]
+                
+                prices_close = prices_history['Close'].astype(float)
+
+                # Calcula las medias móviles exponenciales.
+                fast_ema = pandas.Series(prices_close.ewm(span=fast, min_periods=fast - 1).mean())
+                slow_ema = pandas.Series(prices_close.ewm(span=slow, min_periods=slow - 1).mean())
+
+                # Calcula la línea MACD.
+                macd = fast_ema - slow_ema
+
+                # Calcula la línea de señal.
+                signal_ema = pandas.Series(macd.ewm(span=signal, min_periods=signal - 1).mean())
+
+                # Calcula el histograma.
+                histogram = macd - signal_ema
+
+                # Crea la columna de señales.
+                signals = []
+                for i in range(len(prices_close)):
+                    if histogram[i] > 0 and histogram[i - 1] <= 0:
+                        signals.append(FutureValues.SIDE_TYPE_LONG.value)
+                    elif histogram[i] < 0 and histogram[i - 1] >= 0:
+                        signals.append(FutureValues.SIDE_TYPE_SHORT.value)
+                    else:
+                        signals.append("No trade")
+
+                data_frame.loc[ind, DataFrameColum.IMPULSE_MACD.value] = macd
+                data_frame.loc[ind, DataFrameColum.IMPULSE_MACD_HISTOGRAM.value] = histogram
+                data_frame.loc[ind, DataFrameColum.IMPULSE_MACD_SIGNAL.value] = signal
+                data_frame.loc[ind, DataFrameColum.IMPULSE_MACD_SIGNALS.value] = signals
+
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "MACD", e)
+                continue
+
+        return data_frame 
+
     
     def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
