@@ -320,3 +320,12 @@ class DataFrameUtil:
             new_columns.append(new_column)
         
         return df
+    
+    @staticmethod
+    def verify_and_create_columns(df, list_comns):
+        # Función para verificar y crear columnas si no existen en el DataFrame
+        for columna in list_comns:
+            if columna not in df.columns:
+                df[columna] = None  # Asignar un valor predeterminado
+        
+        return df

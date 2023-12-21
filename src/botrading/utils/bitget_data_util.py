@@ -26,6 +26,7 @@ from src.botrading.utils.enums.colum_state_values import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.future_values import FutureValues
+from src.botrading.utils.dataframe_util import DataFrameUtil
 
 from configs.config import settings as settings
 
@@ -484,6 +485,10 @@ class BitgetDataUtil:
         Devuelve:
             Un DataFrame de Pandas que contiene los valores del indicador Impulse MACD LazyBear.
         """        
+        # Verificar si las columnas existe en el DataFrame
+        list_comns = [DataFrameColum.IMPULSE_MACD.value, DataFrameColum.IMPULSE_MACD_HISTOGRAM.value, DataFrameColum.IMPULSE_MACD_SIGNAL.value, DataFrameColum.IMPULSE_MACD_SIGNALS.value]
+        data_frame = DataFrameUtil.verify_and_create_columns(data_frame, list_comns)
+
         fast=config_macd.fast
         slow=config_macd.slow
         signal=config_macd.signal
