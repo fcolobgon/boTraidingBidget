@@ -180,7 +180,7 @@ class Strategy:
         profit_percentage = 0.5
         time_range = self.get_time_range()
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
-        df = bitget_data_util.updating_price_indicators(time_range=time_range, data_frame=df, prices_history_dict=prices_history)
+        df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
         
         for ind in df.index:
 
