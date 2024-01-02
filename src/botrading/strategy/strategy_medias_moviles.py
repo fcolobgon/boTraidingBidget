@@ -87,6 +87,7 @@ class Strategy:
         
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
 
+        df = df.sort_values(by=self.step_counter, ascending=False)
         self.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=df)
         
         for ind in df.index:
@@ -209,7 +210,7 @@ class Strategy:
             print(message)
             print("#####################################################################################################################")
             print(data_frame[[
-                DataFrameColum.SYMBOL.value,
+                DataFrameColum.BASE.value,
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            
