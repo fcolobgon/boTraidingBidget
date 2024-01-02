@@ -302,8 +302,10 @@ class DataFrameUtil:
         else:
             return False
 
+    
     @staticmethod
     def replace_rows_df_backup_with_df_for_index (df_master: pandas.DataFrame, df_slave: pandas.DataFrame ):
+
         """Las filas del dataframe SLAVE las sustituye en el dataframe MASTER"""
         for index, row in df_slave.iterrows():
             df_master.loc[index] = df_slave.loc[index]

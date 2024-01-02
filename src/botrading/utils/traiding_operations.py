@@ -6,7 +6,6 @@ from binance import helpers
 from src.botrading.bit import BitgetClienManager
 from src.botrading.constants import botrading_constant
 from src.botrading.utils import excel_util
-from src.botrading.utils.text_util import textUtil
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
@@ -32,7 +31,9 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
             #Solo se ejecuta en para modo TEST
             if settings.BITGET_CLIENT_TEST_MODE == True:
                 margin_coin = 'S' + settings.MARGINCOIN
-                symbol = df_buy.loc[ind,DataFrameColum.SYMBOL_TEST.value]
+                baseCoin = 'S' +  df_buy.loc[ind,DataFrameColum.BASE.value]
+                mode = 'S' + settings.MARGIN_MODE
+                symbol = baseCoin + margin_coin + "_" + mode
 
             print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
             

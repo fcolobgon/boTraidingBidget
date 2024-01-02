@@ -81,8 +81,6 @@ class BitgetBuyThreed(threading.Thread):
 
     def merge_dataframes(self, update_data_frame: pandas.DataFrame):
 
-        print (update_data_frame)
-
         if self.buy_thread_readry:
             self.lock_buy_thread()
 
