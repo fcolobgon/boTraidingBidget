@@ -37,10 +37,10 @@ class Strategy:
         self.ma_150_ascending_colum = "MA_150_ASCENDING"
         
     def get_time_range(self) -> TimeRanges:
-        #return TimeRanges("MINUTES_5")
-        return TimeRanges("MINUTES_15")
+        return TimeRanges("MINUTES_5")
+        #return TimeRanges("MINUTES_15")
 
-        # Giro ADX segun bitman
+
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
         rules = [ColumStateValues.WAIT]
@@ -60,28 +60,26 @@ class Strategy:
             
             df[self.step_counter] = 0
             self.first_iteration = False
-            
+            self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
         
+        self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
-        
+        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
         
         config_ma_50 = ConfigMA(length=50, type="sma")
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
         df = bitget_data_util.updating_ma(config_ma= config_ma_50, data_frame=df, prices_history_dict=prices_history)
 
         df[self.ma_50_colum] = df[DataFrameColum.MA_LAST.value]
         df[self.ma_50_ascending_colum] = df[DataFrameColum.MA_ASCENDING.value]
         
         config_ma_100 = ConfigMA(length=100, type="sma")
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
         df = bitget_data_util.updating_ma(config_ma= config_ma_100, data_frame=df, prices_history_dict=prices_history)
         
         df[self.ma_100_colum] = df[DataFrameColum.MA_LAST.value]
         df[self.ma_100_ascending_colum] = df[DataFrameColum.MA_ASCENDING.value]
         
-        config_ma_150 = ConfigMA(length=101, type="sma")
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
+        config_ma_150 = ConfigMA(length=150, type="sma")
         df = bitget_data_util.updating_ma(config_ma= config_ma_150, data_frame=df, prices_history_dict=prices_history)
                 
         df[self.ma_150_colum] = df[DataFrameColum.MA_LAST.value]
@@ -89,7 +87,7 @@ class Strategy:
         
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
 
-        Strategy.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=df)
+        self.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=df)
         
         for ind in df.index:
 
@@ -119,7 +117,7 @@ class Strategy:
                         df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
                 
                 
-                Strategy.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
+                self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
                 return df
             
             if step == 1: #LONG
@@ -132,7 +130,7 @@ class Strategy:
                 if actual_price > ma_100 and actual_price < ma_50:
                     
                     df.loc[ind, self.step_counter] = 3
-                    Strategy.print_data_frame(message=symbol + " -> PASO 1 FINALIZADO", data_frame=df)
+                    self.print_data_frame(message=symbol + " -> PASO 1 FINALIZADO", data_frame=df)
                     return df
             
             if step == 2: #SHORT
@@ -145,7 +143,7 @@ class Strategy:
                 if actual_price < ma_100 and actual_price > ma_50:
                     
                     df.loc[ind, self.step_counter] = 4
-                    Strategy.print_data_frame(message=symbol + " -> PASO 2 FINALIZADO", data_frame=df)
+                    self.print_data_frame(message=symbol + " -> PASO 2 FINALIZADO", data_frame=df)
                     return df
                 
             if step == 3: #LONG
@@ -194,7 +192,7 @@ class Strategy:
             df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
             df.loc[ind, self.step_counter] = 5
             
-        Strategy.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
+        self.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
         return df
     
     def apply_sell(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
@@ -204,10 +202,21 @@ class Strategy:
         return pandas.DataFrame()
     
     
-    @staticmethod
-    def print_data_frame(message: str, data_frame: pandas.DataFrame, print_empty:bool=True):
+    def print_data_frame(self, message: str, data_frame: pandas.DataFrame, print_empty:bool=True):
 
         if data_frame.empty == False:
             print(message)
             print("#####################################################################################################################")
-            print(data_frame)
+            print(data_frame[[
+                DataFrameColum.SYMBOL.value,
+                DataFrameColum.TAKE_PROFIT.value,
+                DataFrameColum.STOP_LOSS.value,
+                DataFrameColum.SIDE_TYPE.value,            
+                self.step_counter,
+                self.ma_50_colum,
+                self.ma_50_ascending_colum,
+                self.ma_100_colum,
+                self.ma_100_ascending_colum,
+                self.ma_150_colum,
+                self.ma_150_ascending_colum
+                ]])
