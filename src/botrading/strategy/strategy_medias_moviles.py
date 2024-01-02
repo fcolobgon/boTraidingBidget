@@ -170,7 +170,6 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price < ma_50:
-                    
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 
         return pandas.DataFrame()

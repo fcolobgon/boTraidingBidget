@@ -58,7 +58,7 @@ class BitgetClienManager:
         startTime_ms = int(startTime.timestamp() * 1000)
         endTime_ms = int(endTime.timestamp() * 1000)
 
-        temp_data = self.client_bit.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market')
+        temp_data = self.client_bit.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market', limit=limit)
             
         df_history_symbol = pandas.DataFrame(
             temp_data,
