@@ -85,8 +85,9 @@ class BitgetBuyThreed(threading.Thread):
             self.lock_buy_thread()
 
             #Sustituye las lineas Slave con Master
-            self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
-
+            #self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
+            self.data_frame = update_data_frame
+            
             excel_util.save_data_frame(data_frame=self.data_frame, exel_name=self.data_frame_name)
 
             self.unlock_buy_thread()
@@ -95,6 +96,7 @@ class BitgetBuyThreed(threading.Thread):
             self.wait_buy_thread_ready()
             #Sustituye las lineas Slave con Master
             self.merge_dataframes(update_data_frame=update_data_frame)
+            return self.data_frame
 
     def wait_buy_thread_ready(self):
 
@@ -141,15 +143,15 @@ class BitgetBuyThreed(threading.Thread):
                 data_frame_buy_now = data_frame_for_buy.query(state_query)
 
                 if data_frame_buy_now.empty:
-                    print("No hay monedas para comprar ahora!!")
-                    self.merge_dataframes(update_data_frame=data_frame_for_buy)
+                    print("No hay monedas para comprar ahora!! ")
+                    self.data_frame = self.merge_dataframes(update_data_frame=data_frame_for_buy)
                 else:
                     data_frame_buy_now = self.apply_max_coin_buy(data_frame_buy_now)
 
                     df_buyed = traiding_operations.logic_buy(clnt_bit=self.client_bit, df_buy=data_frame_buy_now, quantity_usdt = self.quantity_buy_order)
                     # logger.info("########################### COMPRA REALIZADA ########################### ")
 
-                    self.merge_dataframes(update_data_frame=df_buyed)
+                    self.data_frame = self.merge_dataframes(update_data_frame=df_buyed)
 
             time.sleep(1)
 

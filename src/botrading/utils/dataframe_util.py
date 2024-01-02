@@ -79,14 +79,6 @@ class DataFrameUtil:
                 data_frame.loc[ind, DataFrameColum.STOP_LOSS_LEVEL.value] = 7
             
         return data_frame
-
-    @staticmethod
-    def replace_rows_df_backup_with_df_for_index (df_slave: pandas.DataFrame, df_master: pandas.DataFrame):
-        #Copiamos el contenido de un df al df_bckp
-        for index, row in df_slave.iterrows():
-            df_master.loc[index] = df_slave.loc[index]
-
-        return df_master
     
     @staticmethod
     def add_columns_to_dataframe(column_names, df:pandas.DataFrame):
