@@ -1,6 +1,7 @@
 
 from datetime import datetime
 import pandas
+import numpy
 from binance import helpers
 
 from src.botrading.bit import BitgetClienManager
@@ -11,6 +12,22 @@ from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
 from configs.config import settings as settings
 
+def check_open_order(clnt_bit: BitgetClienManager, order_id:str) -> bool:
+    
+    open_orders = get_open_orders(clnt_bit=clnt_bit)
+    return numpy.isin(open_orders, order_id)
+
+def get_open_orders(clnt_bit: BitgetClienManager) -> numpy:
+    
+    margin_coin = settings.MARGINCOIN
+    productType = settings.FUTURE_CONTRACT
+    
+    if settings.BITGET_CLIENT_TEST_MODE == True:
+        margin_coin = 'S' + settings.MARGINCOIN
+        productType = 'S' + settings.FUTURE_CONTRACT
+    
+    return clnt_bit.get_open_orders(marginCoin=margin_coin,productType=productType)
+    
 """_summary_
     sideType: short o long
 """
@@ -54,9 +71,13 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
                 
             if order['msg'] == 'success':
+                orderInfo = order['data']
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
                 df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   
                 df_buy.loc[ind,DataFrameColum.SIZE.value] = price_coin_buy
+                df_buy.loc[ind,DataFrameColum.ORDER_OPEN.value] = True
+                df_buy.loc[ind,DataFrameColum.ORDER_ID.value] = orderInfo['orderId']
+                df_buy.loc[ind,DataFrameColum.CLIENT_ORDER_ID.value] = orderInfo['clientOrderId']
                 df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
             else:
                 print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
@@ -81,8 +102,6 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
     for ind in df_sell.index:
 
         symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]
-        base = df_sell.loc[ind,DataFrameColum.BASE.value]
-        quote = df_sell.loc[ind,DataFrameColum.QUOTE.value]
         sideType = str(df_sell.loc[ind, DataFrameColum.SIDE_TYPE.value])
         quantity_usdt = df_sell.loc[ind,DataFrameColum.MONEY_SPENT.value] 
         price_coin_buy = df_sell.loc[ind,DataFrameColum.SIZE.value]
@@ -91,7 +110,9 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
         #Solo se ejecuta en para modo TEST
         if settings.BITGET_CLIENT_TEST_MODE == True:
             margin_coin = 'S' + settings.MARGINCOIN
-            symbol = df_sell.loc[ind,DataFrameColum.SYMBOL_TEST.value]
+            baseCoin = 'S' +  df_sell.loc[ind,DataFrameColum.BASE.value]
+            mode = 'S' + settings.FUTURE_CONTRACT
+            symbol = baseCoin + margin_coin + "_" + mode
 
         price_convert_coin_to_usdt, price_coin = TradingUtil.convert_price_coin_to_usdt(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, price_convert_coin = price_coin_buy, symbol=symbol)
 
@@ -99,7 +120,10 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
 
         if order['msg'] == 'success':
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
+            df_sell[DataFrameColum.ORDER_OPEN.value] = False
             df_sell[DataFrameColum.PRICE_SELL.value][ind] = price_coin
+            df_sell[DataFrameColum.ORDER_ID.value] = "-"
+            df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
         else:
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
 

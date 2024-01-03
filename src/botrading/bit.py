@@ -1,6 +1,7 @@
 from multiprocessing.connection import wait
 import platform
 import pandas
+import numpy
 from datetime import datetime, timedelta
 from datetime import datetime
 
@@ -89,3 +90,13 @@ class BitgetClienManager:
         """
         return float(self.client_bit.mix_get_market_price(symbol=symbol)["data"]["markPrice"])
     
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_open_orders(self, marginCoin, productType) -> numpy:
+    
+        orders = self.client_bit.mix_get_all_open_orders(marginCoin=marginCoin,productType=productType)
+        
+        order_ids = []
+        for order in orders["data"]:
+            order_ids.append(order["orderId"])
+
+        return numpy.array(order_ids)

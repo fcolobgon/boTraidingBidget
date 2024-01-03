@@ -15,6 +15,7 @@ import ta.trend as trend
 from ta.trend import ADXIndicator
 import pandas_ta 
 
+from src.botrading.utils import traiding_operations
 from src.botrading.utils.math_calc_util import MathCal_util
 from src.botrading.constants import botrading_constant
 from src.botrading.model.indocators import *
@@ -90,8 +91,9 @@ class BitgetDataUtil:
             #Columnas necesarias de arranque
             #self.data_frame_bkp[DataFrameColum.SYMBOL.value] = "-"
             self.data_frame_bkp[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
-            #self.data_frame_bkp[DataFrameColum.BASE.value] = "-"
-            #self.data_frame_bkp[DataFrameColum.QUOTE.value] = "-"
+            self.data_frame_bkp[DataFrameColum.ORDER_OPEN.value] = False
+            self.data_frame_bkp[DataFrameColum.ORDER_ID.value] = "-"
+            self.data_frame_bkp[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
             self.data_frame_bkp[DataFrameColum.DATE.value] = "-"
             self.data_frame_bkp[DataFrameColum.PRICE_BUY.value] = "-"
             self.data_frame_bkp[DataFrameColum.PRICE_SELL.value] = "-"
@@ -163,6 +165,15 @@ class BitgetDataUtil:
             dict_values[symbol] = prices_history
 
         return dict_values
+    
+    def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame()):
+        
+        for ind in data_frame.index:
+            
+            order_id = data_frame.loc[ind, DataFrameColum.ORDER_ID.value]
+            data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = traiding_operations.check_open_order(clnt_bit=self.client_bit, order_id=order_id)
+
+        return data_frame
     
     def updating_price_indicators(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         

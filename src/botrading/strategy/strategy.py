@@ -96,24 +96,24 @@ class Strategy:
             
             step = df.loc[ind, self.step_counter]
             
-            if step == 0:
+            #if step == 0:
                 
-                ma_50 = df.loc[ind, self.ma_50_colum]
-                ma_50_ascending = df.loc[ind, self.ma_50_ascending_colum]
+            ma_50 = df.loc[ind, self.ma_50_colum]
+            ma_50_ascending = df.loc[ind, self.ma_50_ascending_colum]
                 
-                ma_100 = df.loc[ind, self.ma_100_colum]
-                ma_100_ascending = df.loc[ind, self.ma_100_ascending_colum]
+            ma_100 = df.loc[ind, self.ma_100_colum]
+            ma_100_ascending = df.loc[ind, self.ma_100_ascending_colum]
                 
-                ma_150 = df.loc[ind, self.ma_150_colum]
-                ma_150_ascending = df.loc[ind, self.ma_150_ascending_colum]
+            ma_150 = df.loc[ind, self.ma_150_colum]
+            ma_150_ascending = df.loc[ind, self.ma_150_ascending_colum]
             
-                if ma_50 > ma_100 and ma_100 > ma_150:
-                    if ma_50_ascending and ma_100_ascending and ma_150_ascending:
-                        df.loc[ind, self.step_counter] = 1
-                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                        
-                        self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
-                        return df
+            if ma_50 > ma_100 and ma_100 > ma_150:
+                if ma_50_ascending and ma_100_ascending and ma_150_ascending:
+                    df.loc[ind, self.step_counter] = 1
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                    
+                    self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
+                    return df
                 
                 if ma_50 < ma_100 and ma_100 < ma_150:
                     if not ma_50_ascending and not ma_100_ascending and not ma_150_ascending:
@@ -199,9 +199,19 @@ class Strategy:
     
     def apply_sell(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
 
-        time.sleep(5)
+        rules = [ColumStateValues.BUY]
+        state_query = RuleUtils.get_rules_search_by_states(rules)
+        df = data_frame.query(state_query)
         
-        return pandas.DataFrame()
+        if df.empty:
+            
+            time.sleep(2)
+            return pandas.DataFrame()
+        else:
+            
+            df = bitget_data_util.updating_open_orders(data_frame=df)
+            df.loc[~df[DataFrameColum.ORDER_OPEN.value], DataFrameColum.STATE.value] = ColumStateValues.SELL.value
+            return df
     
     
     def print_data_frame(self, message: str, data_frame: pandas.DataFrame, print_empty:bool=True):
