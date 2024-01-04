@@ -120,9 +120,6 @@ class BitgetDataUtil:
             #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=self.data_frame_bkp)
             self.data_frame_bkp = DataFrameCheckUtil.create_ma_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
-
-    
-
     
     def get_crypto_observe_list(self):
         return self.crypto_observe_list
@@ -216,7 +213,7 @@ class BitgetDataUtil:
        
         return True
 
-    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         series = config_adx.series
         
@@ -228,10 +225,7 @@ class BitgetDataUtil:
             
             try:
                 
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
+                prices_history = prices_history_dict[symbol]
                 
                 prices_high = prices_history['High'].astype(float)
                 prices_low = prices_history['Low'].astype(float)
