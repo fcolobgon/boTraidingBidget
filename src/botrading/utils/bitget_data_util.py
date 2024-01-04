@@ -2,16 +2,9 @@
 from datetime import datetime
 from typing import List
 import pandas
-from enum import Enum
 import numpy
-import math
 from math import atan
-import time
-from collections import Counter
 
-import ta
-import talib
-import ta.trend as trend
 from ta.trend import ADXIndicator
 import pandas_ta 
 
@@ -28,11 +21,8 @@ from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.future_values import FutureValues
 from src.botrading.utils.dataframe_util import DataFrameUtil
-from finta import TA
 
 from configs.config import settings as settings
-
-import requests
 
      
 class BitgetDataUtil:
@@ -125,19 +115,10 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.NOTE_5.value] = "-"
 
             self.data_frame_bkp = DataFrameCheckUtil.create_price_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_candle_trend_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_supertrend_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_adx_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_ao_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_macd_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_stoch_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_cci_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_tsi_columns(data_frame=self.data_frame_bkp)
             self.data_frame_bkp = DataFrameCheckUtil.create_ma_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_trix_columns(data_frame=self.data_frame_bkp)
-            #self.data_frame_bkp = DataFrameCheckUtil.create_top_gainers_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
 
     
@@ -235,80 +216,6 @@ class BitgetDataUtil:
        
         return True
 
-    def updating_rsi(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
-        
-        data_frame = DataFrameCheckUtil.create_rsi_columns(data_frame=data_frame)
-        
-        for ind in data_frame.index:
-            
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-            
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                    
-                rsi = pandas_ta.rsi(prices_history['Close'])
-                
-                rsi_numpy = numpy.array(rsi)
-                rsi_numpy = rsi_numpy[~numpy.isnan(rsi_numpy)]
-                data_frame[DataFrameColum.RSI.value][ind] = rsi_numpy
-                data_frame[DataFrameColum.RSI_LAST.value][ind] = rsi_numpy[-1]
-                data_frame[DataFrameColum.RSI_ASCENDING.value][ind] = self.list_is_ascending(check_list = rsi_numpy, ascending_count = ascending_count, previous_period = previous_period)
-
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "RSI", e)
-                continue
-
-            
-        return data_frame
-    
-    def updating_supertrend(self, config_supertrend:ConfigSupertrend=ConfigSupertrend(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
-        length = config_supertrend.length
-        factor = config_supertrend.factor
-        super_name = "SUPERTd_"+ str(length) +"_" + str(factor) +".0"
-        
-        data_frame = DataFrameCheckUtil.create_supertrend_columns(data_frame=data_frame)
-        
-        for ind in data_frame.index:
-            
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-            
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                    
-                prices_high = prices_history['High'].astype(float)
-                prices_low = prices_history['Low'].astype(float)
-                prices_close = prices_history['Close'].astype(float)
-                    
-                trend = pandas_ta.supertrend(high=prices_high, low=prices_low, close=prices_close, length=length, multiplier=factor)
-
-                value_trend = numpy.array(trend[super_name])
-                value_trend = value_trend[~numpy.isnan(value_trend)]
-
-                if value_trend[-2] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = False
-                    
-                if value_trend[-1] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = False
-
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "SUPER TREND", e)
-                continue
-
-        return data_frame
-
-
     def updating_adx(self, config_adx:ConfigADX=ConfigADX(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         series = config_adx.series
@@ -385,171 +292,6 @@ class BitgetDataUtil:
         
         return data_frame  
     
-    def updating_impulse_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
-        
-        fast=config_macd.fast
-        slow=config_macd.slow
-        signal=config_macd.signal
-        
-        chars = "MACDh_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        blue_line = "MACD_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        red_line = "MACDs_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        
-        data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
-        fast_period=12
-        slow_period=26
-        signal_period=9
-                        
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                
-                prices_close = prices_history['Close'].astype(float)
-                
-                # Calcular las medias móviles rápidas y lentas.
-                fast_ma = pandas.Series(prices_close.ewm(span=fast_period, min_periods=fast_period - 1).mean())
-                slow_ma = pandas.Series(prices_close.ewm(span=slow_period, min_periods=slow_period - 1).mean())
-
-                # Calcular la diferencia entre las medias móviles rápidas y lentas.
-                macd = fast_ma - slow_ma
-                print(macd)
-                # Calcular la media móvil de la señal.
-                signal = pandas.Series(macd.ewm(span=signal_period, min_periods=signal_period - 1).mean())
-                print(signal)
-
-                # Calcular los cruces entre las líneas MACD y señal.
-                crosses = pandas.Series(numpy.where(macd > signal, 1, -1), name="Crosses")
-                print(crosses)
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "MACD", e)
-                continue
-        
-        return data_frame       
-    
-    def updating_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
-        
-        fast=config_macd.fast
-        slow=config_macd.slow
-        signal=config_macd.signal
-        
-        chars = "MACDh_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        blue_line = "MACD_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        red_line = "MACDs_" + str(fast) + "_" + str(slow) + "_" + str(signal)
-        
-        data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
-                        
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                
-                prices_close = prices_history['Close'].astype(float)
-
-                macd =  pandas_ta.macd(close = prices_close, fast=fast, slow=slow, signal=signal)
-                
-                macd_numpy = numpy.array(macd[blue_line])
-                macd_h_numpy = numpy.array(macd[chars])
-                macd_s_numpy = numpy.array(macd[red_line])
-                
-                macd_numpy = macd_numpy[~numpy.isnan(macd_numpy)]
-                macd_h_numpy = macd_h_numpy[~numpy.isnan(macd_h_numpy)]
-                macd_s_numpy = macd_s_numpy[~numpy.isnan(macd_s_numpy)]
-        
-                #data_frame[DataFrameColum.MACD_BAR_CHART.value][ind] = macd_h_numpy
-                #data_frame[DataFrameColum.MACD_GOOD_LINE.value][ind] = macd_numpy
-                #data_frame[DataFrameColum.MACD_BAD_LINE.value][ind] = macd_s_numpy
-                data_frame.loc[ind, DataFrameColum.MACD_LAST.value] = self.get_last_element(element_list = macd_numpy, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.MACD_LAST_CHART.value] = self.get_last_element(element_list = macd_h_numpy, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.MACD_PREVIOUS_CHART.value] = macd_h_numpy[-2]
-                data_frame.loc[ind, DataFrameColum.MACD_CHART_ASCENDING.value] = self.list_is_ascending(check_list = macd_h_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.MACD_ASCENDING.value] = self.list_is_ascending(check_list = macd_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy, ascending_count, previous_period)
-                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_ZERO.value] = self.cruce_zero(macd_h_numpy)
-                
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "MACD", e)
-                continue
-        
-        return data_frame 
-
-    def updating_impulse_macd_lazybear(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
-
-        list_comns = [DataFrameColum.IMPULSE_MACD.value, DataFrameColum.IMPULSE_MACD_HISTOGRAM.value, DataFrameColum.IMPULSE_MACD_SIGNAL.value, DataFrameColum.IMPULSE_MACD_SIGNALS.value]
-        data_frame = DataFrameUtil.verify_and_create_columns(data_frame, list_comns)
-
-        fast=config_macd.fast
-        slow=config_macd.slow
-        signal=config_macd.signal
-        
-        lengthMA: int = 34
-        lengthSignal: int = 9       
-        
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                
-                prices_close = prices_history['Close'].astype(float)
-
-                src = (
-                    prices_history["High"].to_numpy(dtype=numpy.double)
-                    + prices_history["Low"].to_numpy(dtype=numpy.double)
-                    + prices_history["Close"].to_numpy(dtype=numpy.double)
-                ) 
-                hi = self.calc_smma(prices_history["High"].to_numpy(dtype=numpy.double), lengthMA)
-                lo = self.calc_smma(prices_history["Low"].to_numpy(dtype=numpy.double), lengthMA)
-                mi = self.calc_zlema(src, lengthMA)
-
-                md = numpy.full_like(mi, fill_value=numpy.nan)
-
-                conditions = [mi > hi, mi < lo]
-                choices = [mi - hi, mi - lo]
-
-                md = numpy.select(conditions, choices, default=0)
-
-                sb = talib.SMA(md, lengthSignal)
-                sh = md - sb
-                
-                print("IMPULSE_MACD")
-                print(md)
-                print("IMPULSE_MACD_HISTOGRAM")
-                print(sh)
-                print("IMPULSE_MACD_SIGNAL")
-                print(sb)
-
-                data_frame[DataFrameColum.IMPULSE_MACD.value][ind] = self.get_last_element(element_list = md, previous_period = previous_period) 
-                data_frame[DataFrameColum.IMPULSE_MACD_HISTOGRAM.value][ind] = self.get_last_element(element_list = sh, previous_period = previous_period) 
-                data_frame[DataFrameColum.IMPULSE_MACD_SIGNAL.value][ind] = self.get_last_element(element_list = sb, previous_period = previous_period) 
-                #data_frame.loc[ind, DataFrameColum.IMPULSE_MACD_SIGNALS.value] = signals
-                
-                print(data_frame)
-
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "MACD", e)
-                continue
-
-        return data_frame 
-
-    
     def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
         long_stoch = config_stoch_rsi.longitud_stoch
@@ -601,141 +343,6 @@ class BitgetDataUtil:
                 continue
         
         return data_frame
-    
-
-
-    def updating_stoch(self, config_stoch:ConfigSTOCH=ConfigSTOCH(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
-        
-        #Configuracion Gabri
-        series = config_stoch.series
-        d = config_stoch.d
-        smooth = config_stoch.smooth
-        
-        blue_line = "STOCHk_" + str(series) + "_" + str(d) + "_" + str(smooth)
-        red_line = "STOCHd_" + str(series) + "_" + str(d) + "_" + str(smooth)
-        
-        data_frame = DataFrameCheckUtil.create_stoch_columns(data_frame=data_frame)
-
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-
-                high = prices_history['High'].astype(float)
-                low = prices_history['Low'].astype(float)
-                close = prices_history['Close'].astype(float)   
-                
-                stoch = pandas_ta.stoch(close = close, low = low, high = high, k = series, d = d, smooth_k= smooth)
-                
-                stoch_k_numpy = numpy.array(stoch[blue_line])
-                stoch_d_numpy = numpy.array(stoch[red_line])
-                
-                stoch_k_numpy = stoch_k_numpy[~numpy.isnan(stoch_k_numpy)]
-                stoch_d_numpy = stoch_d_numpy[~numpy.isnan(stoch_d_numpy)]
-                
-                data_frame[DataFrameColum.STOCH_GOOD_LINE.value][ind] = stoch_k_numpy
-                data_frame[DataFrameColum.STOCH_BAD_LINE.value][ind] = stoch_d_numpy
-                data_frame[DataFrameColum.STOCH_ASCENDING.value][ind] = self.list_is_ascending(check_list = stoch_k_numpy, ascending_count = ascending_count)
-                data_frame[DataFrameColum.STOCH_CRUCE_LINE.value][ind] = self.good_indicator_on_top_of_bad(stoch_k_numpy, stoch_d_numpy, ascending_count)
-                data_frame[DataFrameColum.STOCH_LAST.value][ind] = stoch_k_numpy[-1]
-                
-                
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "STOCH", e)
-                continue
-        
-        return data_frame
-    
-    def updating_cci(self, config_cci:ConfigCCI=ConfigCCI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
-                
-        series = config_cci.series
-        
-        data_frame = DataFrameCheckUtil.create_cci_columns(data_frame=data_frame)
-
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-                
-                high_prices = prices_history['High'].astype(float)
-                low_prices = prices_history['Low'].astype(float)
-                close_prices = prices_history['Close'].astype(float) 
-                
-                cci =  pandas_ta.cci(low= low_prices, close= close_prices, high= high_prices, length=series)
- 
-                cci_numpy = numpy.array(cci)       
-                cci_numpy = cci_numpy[~numpy.isnan(cci_numpy)]
-        
-                data_frame[DataFrameColum.CCI.value][ind] = cci_numpy
-                data_frame[DataFrameColum.CCI_LAST.value][ind] = cci_numpy[-1]
-                data_frame[DataFrameColum.CCI_ASCENDING.value][ind] = self.list_is_ascending(check_list = cci_numpy, ascending_count = ascending_count)
-
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "CCI", e)
-                continue
-        
-        return data_frame
-
-
-    def updating_tsi(self, config_tsi:ConfigTSI=ConfigTSI(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
-        
-        #Configuracion Gabri
-
-        long = config_tsi.long
-        short = config_tsi.short
-        siglen = config_tsi.siglen
-        
-        blue_line = "TSI_" + str(long) + "_" + str(short) + "_" + str(siglen)
-        red_line = "TSIs_" + str(long) + "_" + str(short) + "_" + str(siglen)
-        
-        data_frame = DataFrameCheckUtil.create_tsi_columns(data_frame=data_frame)
-
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-
-                close = prices_history['Close'].astype(float)   
-                
-                tsi = pandas_ta.tsi(close = close, fast = long, signal=siglen, slow=short)
-                
-                tsi_numpy = numpy.array(tsi[blue_line])
-                tsi_s_numpy = numpy.array(tsi[red_line])
-                
-                tsi_numpy = tsi_numpy[~numpy.isnan(tsi_numpy)]
-                tsi_s_numpy = tsi_s_numpy[~numpy.isnan(tsi_s_numpy)]
-                
-                data_frame[DataFrameColum.TSI_GOOD_LINE.value][ind] = tsi_numpy
-                data_frame[DataFrameColum.TSI_BAD_LINE.value][ind] = tsi_s_numpy
-                data_frame[DataFrameColum.TSI_ASCENDING.value][ind] = self.list_is_ascending(check_list = tsi_numpy, ascending_count = ascending_count)
-                data_frame[DataFrameColum.TSI_CRUCE_LINE.value][ind] = self.good_indicator_on_top_of_bad(tsi_numpy, tsi_s_numpy, ascending_count)
-                data_frame[DataFrameColum.TSI_LAST.value][ind] = tsi_numpy[-1]
-                
-                
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "TSI", e)
-                continue
-        
-        return data_frame
-
 
     def updating_ma(self, config_ma:ConfigMA=ConfigMA(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
@@ -793,47 +400,6 @@ class BitgetDataUtil:
             data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value] = round(profit, 5)
 
 
-        return data_frame
-
-    def updating_trix(self, config_trix:ConfigTrix=ConfigTrix(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
-
-        length = config_trix.length
-        signal = config_trix.signal
-
-        trix_line = "TRIX_" + str(length) + "_" + str(signal)
-        
-        data_frame = DataFrameCheckUtil.create_trix_columns(data_frame=data_frame)
-        
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
-
-                open_time_arr = numpy.array(prices_history['Close time'].values)
-                close = prices_history['Close'].astype(float) 
-                  
-                trix = pandas_ta.trix(close = close, length = length)
-                trix_numpy = numpy.array(trix)
-
-                trix_numpy = numpy.array(trix[trix_line])
-
-                trix_numpy = trix_numpy[~numpy.isnan(trix_numpy)]
-
-                data_frame[DataFrameColum.TRIX.value][ind] = trix_numpy
-                data_frame[DataFrameColum.TRIX_ASCENDING.value][ind] = self.list_is_ascending(check_list = trix_numpy, ascending_count = ascending_count)
-                data_frame[DataFrameColum.TRIX_LAST.value][ind] = trix_numpy[-1]
-                data_frame[DataFrameColum.TRIX_ANGLE.value][ind] = self.angle_one_line(line_points = trix_numpy, time_points = open_time_arr, time_range = time_range)
-                
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "TRIX", e)
-                continue
-        
         return data_frame
     
     def get_last_element(self, element_list:numpy, previous_period:int = 0):
@@ -905,40 +471,6 @@ class BitgetDataUtil:
         
         return ColumLineValues.BLUE_CRUCE_DOWN.value
     
-    def get_top_24h(self, data_frame:pandas.DataFrame=pandas.DataFrame()) -> pandas.DataFrame:
-        """ Funcion que devuelve un data frame ordenado de mayor a menor por TOP_GAINERS (subida en las últimas 24h).
-            Se calcula el desvio de 24h, cogiendo el primer valor y último de la lista de "Close"
-        """
-        dict_values = {}
-        
-        data_frame = DataFrameCheckUtil.create_top_gainers_columns(data_frame=data_frame)
-
-        for ind in data_frame.index:
-            symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
-            prices_history_24h = self.client_bit.get_change_price_24h(symbol)
-            dict_values[symbol] = prices_history_24h
-        
-        now =  datetime.now()
-          
-        for ind in data_frame.index:
-                
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            prev_top_gainer = data_frame[DataFrameColum.TOP_GAINERS.value][ind]
-            actual_top_gainer = dict_values[symbol]
-            data_frame.loc[ind, DataFrameColum.TOP_GAINERS_ASCENDING.value] = True if actual_top_gainer > prev_top_gainer else False
-            data_frame.loc[ind, DataFrameColum.TOP_GAINERS.value] = actual_top_gainer
-            data_frame.loc[ind, DataFrameColum.TOP_GAINERS_DATE.value] = now
-
-        return data_frame.sort_values(DataFrameColum.TOP_GAINERS.value, ascending=False)
-   
-    def update_take_profit(self, data_frame:pandas.DataFrame=pandas.DataFrame(), take_profit:float=1.5) -> pandas.DataFrame:
-                 
-        for ind in data_frame.index:
-                
-            data_frame[DataFrameColum.TAKE_PROFIT.value][ind] = take_profit
-        
-        return data_frame
-    
     def adx_angle(self, list_adx:numpy=[], previous_period:int = 0) -> float:
         
         if previous_period > 0:
@@ -972,27 +504,6 @@ class BitgetDataUtil:
             return pandas.NaT
         
         return sum_angles
-    
-    def calc_smma(self, src: numpy.ndarray, length: int) -> numpy.ndarray:
-
-        smma = numpy.full_like(src, fill_value=numpy.nan)
-        sma = talib.SMA(src, length)
-
-        for i in range(1, len(src)):
-            smma[i] = (
-                sma[i]
-                if numpy.isnan(smma[i - 1])
-                else (smma[i - 1] * (length - 1) + src[i]) / length
-            )
-
-        return smma
-
-    def calc_zlema(self, src: numpy.ndarray, length: int) -> numpy.ndarray:
-
-        ema1 = talib.EMA(src, length)
-        ema2 = talib.EMA(ema1, length)
-        d = ema1 - ema2
-        return ema1 + d
     
     def print_error_updating_indicator(self, symbol, indicator, e):
         
