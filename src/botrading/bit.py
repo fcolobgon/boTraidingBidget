@@ -100,3 +100,28 @@ class BitgetClienManager:
             order_ids.append(order["orderId"])
 
         return numpy.array(order_ids)
+    
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_orders_history(self, productType:str, startTime:datetime) -> pandas.DataFrame:
+        
+        startTime_ms = int(startTime.timestamp() * 1000)
+        endTime_ms = int(datetime.now().timestamp() * 1000)
+        
+        data = self.client_bit.mix_get_productType_history_orders(productType=productType, startTime=startTime_ms, endTime=endTime_ms, pageSize=100)["data"]
+        orders = data["orderList"]
+        
+        df = pandas.DataFrame([
+            {
+                "symbol": order["symbol"],
+                "fee": order["fee"],
+                "posSide": order["posSide"],
+                "totalProfits": order["totalProfits"],
+                "leverage": order["leverage"],
+                "marginMode": order["marginMode"],
+                "orderType": order["orderType"],
+                "ctime": order["ctime"]
+            }
+            for order in orders
+        ])
+        
+        return df
