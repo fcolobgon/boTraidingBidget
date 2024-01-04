@@ -1,5 +1,6 @@
 import pandas
 import time
+from finta import TA
 
 from src.botrading.model.indocators import *
 from src.botrading.utils.bitget_data_util import BitgetDataUtil
@@ -66,7 +67,7 @@ class Strategy:
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
-        
+
         config_ma_50 = ConfigMA(length=50, type="sma")
         df = bitget_data_util.updating_ma(config_ma= config_ma_50, data_frame=df, prices_history_dict=prices_history)
 
@@ -181,27 +182,24 @@ class Strategy:
         time_range = self.get_time_range()
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
 
-        prices_history['Open'] = prices_history['Open'].astype(float)
-        prices_history['High'] = prices_history['High'].astype(float)
-        prices_history['Low'] = prices_history['Low'].astype(float)
-        prices_history['Close'] = prices_history['Close'].astype(float)
-
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
         
         for ind in df.index:
 
             actual_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]   
-            step = df.loc[ind, self.step_counter]   
-
+            step = df.loc[ind, self.step_counter]
+            
             percentage = actual_price * profit_percentage / 100
             symbol = df[DataFrameColum.SYMBOL.value][ind]
+            
+            prices_history_dict = prices_history[symbol]
 
-            if step == 3:
-                value_S4 = bitget_data_util.calculate_support_resistance (prices_history_dict = prices_history[symbol])['s4'].iloc[-1]
+            if step == 3: #LONG
+                value_S4 =  TA.PIVOT(prices_history_dict)['s4'].iloc[-1]
                 df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
                 df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + percentage
-            else:
-                value_R4 = bitget_data_util.calculate_support_resistance (prices_history_dict = prices_history[symbol])['r4'].iloc[-1]
+            else: #SHORT
+                value_R4 =  TA.PIVOT(prices_history_dict)['r4'].iloc[-1]
                 df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
                 df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price - percentage
             

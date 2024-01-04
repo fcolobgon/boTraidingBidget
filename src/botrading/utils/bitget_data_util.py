@@ -163,6 +163,11 @@ class BitgetDataUtil:
                 "Close time"
                 ]]
             
+            prices_history['Open'] = prices_history['Open'].astype(float)
+            prices_history['High'] = prices_history['High'].astype(float)
+            prices_history['Low'] = prices_history['Low'].astype(float)
+            prices_history['Close'] = prices_history['Close'].astype(float)
+            
             dict_values[symbol] = prices_history
 
         return dict_values
@@ -995,6 +1000,3 @@ class BitgetDataUtil:
         print("Error creando " + str(indicator))
         print(str(e))
         print("Posible nueva cripto " + str(symbol))
-    
-    def calculate_support_resistance (prices_history_dict:dict=None):
-        return TA.PIVOT(prices_history_dict)

@@ -116,6 +116,7 @@ class TelegramBot:
     def profit(self, update:Updater, context:CallbackContext):
         """Send a message when the command /profit is issued."""
         
+        
         file_path = self.base_path
         file_path = file_path + os.path.join("operations")
         pathlist = Path(file_path).glob('**/*.txt')
