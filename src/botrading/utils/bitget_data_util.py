@@ -28,6 +28,7 @@ from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.future_values import FutureValues
 from src.botrading.utils.dataframe_util import DataFrameUtil
+from finta import TA
 
 from configs.config import settings as settings
 
@@ -994,3 +995,6 @@ class BitgetDataUtil:
         print("Error creando " + str(indicator))
         print(str(e))
         print("Posible nueva cripto " + str(symbol))
+    
+    def calculate_support_resistance (prices_history_dict:dict=None):
+        return TA.PIVOT(prices_history_dict)

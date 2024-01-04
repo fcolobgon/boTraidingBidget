@@ -149,7 +149,7 @@ class Strategy:
                     self.print_data_frame(message=symbol + " -> PASO 2 FINALIZADO", data_frame=df)
                     return df
                 
-            if step == 3: #LONG
+            if step == 3: #LONG 
                 
                 time_range = self.get_time_range()
                 prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
@@ -180,15 +180,31 @@ class Strategy:
         profit_percentage = 0.5
         time_range = self.get_time_range()
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
+
+        prices_history['Open'] = prices_history['Open'].astype(float)
+        prices_history['High'] = prices_history['High'].astype(float)
+        prices_history['Low'] = prices_history['Low'].astype(float)
+        prices_history['Close'] = prices_history['Close'].astype(float)
+
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
         
         for ind in df.index:
 
             actual_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]   
+            step = df.loc[ind, self.step_counter]   
+
             percentage = actual_price * profit_percentage / 100
+            symbol = df[DataFrameColum.SYMBOL.value][ind]
+
+            if step == 3:
+                value_S4 = bitget_data_util.calculate_support_resistance (prices_history_dict = prices_history[symbol])['s4'].iloc[-1]
+                df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
+                df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + percentage
+            else:
+                value_R4 = bitget_data_util.calculate_support_resistance (prices_history_dict = prices_history[symbol])['r4'].iloc[-1]
+                df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
+                df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price - percentage
             
-            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + percentage
-            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  actual_price - percentage
             df.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
             df.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
             df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
