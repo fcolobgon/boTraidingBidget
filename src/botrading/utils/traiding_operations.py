@@ -77,7 +77,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 df_buy.loc[ind,DataFrameColum.SIZE.value] = price_coin_buy
                 df_buy.loc[ind,DataFrameColum.ORDER_OPEN.value] = True
                 df_buy.loc[ind,DataFrameColum.ORDER_ID.value] = orderInfo['orderId']
-                df_buy.loc[ind,DataFrameColum.CLIENT_ORDER_ID.value] = orderInfo['clientOrderId']
+                df_buy.loc[ind,DataFrameColum.CLIENT_ORDER_ID.value] = orderInfo['clientOid'] #! clientOrderId
                 df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
             else:
                 print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
