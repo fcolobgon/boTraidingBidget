@@ -8,6 +8,7 @@ from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
+from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.future_values import FutureValues
 
@@ -18,29 +19,11 @@ class Strategy:
     name:str
     first_iteration = True
     step_counter = "STEP_COUNTER"
-    ma_50_colum = "MA_50"
-    ma_50_ascending_colum = "MA_50_ASCENDING"
-    ma_100_colum = "MA_100"
-    ma_100_ascending_colum = "MA_100_ASCENDING"
-    ma_150_colum = "MA_150"
-    ma_150_ascending_colum = "MA_150_ASCENDING"
-    
     
     def __init__(self, name:str):
         
         self.name = name
         self.step_counter = "STEP_COUNTER"
-        self.ma_50_colum = "MA_50"
-        self.ma_50_ascending_colum = "MA_50_ASCENDING"
-        self.ma_100_colum = "MA_100"
-        self.ma_100_ascending_colum = "MA_100_ASCENDING"
-        self.ma_150_colum = "MA_150"
-        self.ma_150_ascending_colum = "MA_150_ASCENDING"
-        
-    def get_time_range(self) -> TimeRanges:
-        return TimeRanges("MINUTES_5")
-        #return TimeRanges("MINUTES_15")
-
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
@@ -51,13 +34,7 @@ class Strategy:
         if self.first_iteration:
             
             df = DataFrameCheckUtil.add_columns_to_dataframe(
-                column_names=[self.step_counter,
-                              self.ma_50_colum,
-                              self.ma_50_ascending_colum,
-                              self.ma_100_colum,
-                              self.ma_100_ascending_colum,
-                              self.ma_150_colum,
-                              self.ma_150_ascending_colum], df=df)
+                column_names=[self.step_counter], df=df)
             
             df[self.step_counter] = 0
             self.first_iteration = False
@@ -65,28 +42,16 @@ class Strategy:
             return df
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
-        time_range = self.get_time_range()
+        time_range = TimeRanges("HOUR_4")
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
 
-        config_ma_50 = ConfigMA(length=50, type="sma")
-        df = bitget_data_util.updating_ma(config_ma= config_ma_50, data_frame=df, prices_history_dict=prices_history)
-
-        df[self.ma_50_colum] = df[DataFrameColum.MA_LAST.value]
-        df[self.ma_50_ascending_colum] = df[DataFrameColum.MA_ASCENDING.value]
-        
-        config_ma_100 = ConfigMA(length=100, type="sma")
-        df = bitget_data_util.updating_ma(config_ma= config_ma_100, data_frame=df, prices_history_dict=prices_history)
-        
-        df[self.ma_100_colum] = df[DataFrameColum.MA_LAST.value]
-        df[self.ma_100_ascending_colum] = df[DataFrameColum.MA_ASCENDING.value]
-        
-        config_ma_150 = ConfigMA(length=150, type="sma")
-        df = bitget_data_util.updating_ma(config_ma= config_ma_150, data_frame=df, prices_history_dict=prices_history)
-                
-        df[self.ma_150_colum] = df[DataFrameColum.MA_LAST.value]
-        df[self.ma_150_ascending_colum] = df[DataFrameColum.MA_ASCENDING.value]
-        
+        df = bitget_data_util.updating_adx(data_frame=df, prices_history_dict=prices_history)
+        df = bitget_data_util.updating_ao(data_frame=df, prices_history_dict=prices_history)
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
+        
+        time_range = TimeRanges("HOUR_1")
+        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
+        df = bitget_data_util.updating_stochrsi(data_frame=df, prices_history_dict=prices_history)
 
         df = df.sort_values(by=self.step_counter, ascending=False)
         self.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=df)
@@ -94,84 +59,37 @@ class Strategy:
         for ind in df.index:
 
             symbol = df.loc[ind, DataFrameColum.SYMBOL.value]
-            
+            ao_ascending = df.loc[ind, DataFrameColum.AO_ASCENDING.value]
+            adx_angle = df.loc[ind, DataFrameColum.ADX_ANGLE.value]
             step = df.loc[ind, self.step_counter]
             
-            #if step == 0:
-                
-            ma_50 = df.loc[ind, self.ma_50_colum]
-            ma_50_ascending = df.loc[ind, self.ma_50_ascending_colum]
-                
-            ma_100 = df.loc[ind, self.ma_100_colum]
-            ma_100_ascending = df.loc[ind, self.ma_100_ascending_colum]
-                
-            ma_150 = df.loc[ind, self.ma_150_colum]
-            ma_150_ascending = df.loc[ind, self.ma_150_ascending_colum]
-            
-            if ma_50 > ma_100 and ma_100 > ma_150:
-                if ma_50_ascending and ma_100_ascending and ma_150_ascending:
+            if adx_angle > 0 and adx_angle < 100:
+                if ao_ascending:
                     df.loc[ind, self.step_counter] = 1
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
                     
                     self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
                     return df
                 
-                if ma_50 < ma_100 and ma_100 < ma_150:
-                    if not ma_50_ascending and not ma_100_ascending and not ma_150_ascending:
-                        df.loc[ind, self.step_counter] = 2
-                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                if not ao_ascending:
+                    df.loc[ind, self.step_counter] = 2
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
                 
-                        self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
-                        return df
-            
-            if step == 1: #LONG
-                
-                actual_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]
-                ma_50 = df.loc[ind, self.ma_50_colum]
-                ma_100 = df.loc[ind, self.ma_100_colum]
-                
-                #Tipo long
-                if actual_price > ma_100 and actual_price < ma_50:
-                    
-                    df.loc[ind, self.step_counter] = 3
-                    self.print_data_frame(message=symbol + " -> PASO 1 FINALIZADO", data_frame=df)
-                    return df
-            
-            if step == 2: #SHORT
-                
-                actual_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]
-                ma_50 = df.loc[ind, self.ma_50_colum]
-                ma_100 = df.loc[ind, self.ma_100_colum]
-                
-                #Tipo long
-                if actual_price < ma_100 and actual_price > ma_50:
-                    
-                    df.loc[ind, self.step_counter] = 4
-                    self.print_data_frame(message=symbol + " -> PASO 2 FINALIZADO", data_frame=df)
+                    self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
                     return df
                 
             if step == 3: #LONG 
                 
-                time_range = self.get_time_range()
-                prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
-                df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history, previous_period=1)
+                cruce_rsi = df.loc[ind,DataFrameColum.RSI_STOCH_CRUCE_LINE.value]
                 
-                previous_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]
-                ma_50 = df.loc[ind, self.ma_50_colum]
-                
-                if previous_price > ma_50:
+                if cruce_rsi == ColumLineValues.BLUE_CRUCE_TOP.value:
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
             
             if step == 4: #SHORT
                 
-                time_range = self.get_time_range()
-                prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
-                df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history, previous_period=1)
+                cruce_rsi = df.loc[ind,DataFrameColum.RSI_STOCH_CRUCE_LINE.value]
                 
-                previous_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]
-                ma_50 = df.loc[ind, self.ma_50_colum]
-                
-                if previous_price < ma_50:
+                if cruce_rsi == ColumLineValues.BLUE_CRUCE_DOWN.value:
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 
         return pandas.DataFrame()
@@ -179,7 +97,7 @@ class Strategy:
     def return_for_buy(self, bitget_data_util: BitgetDataUtil, df: pandas.DataFrame) -> pandas.DataFrame:
         
         profit_percentage = 0.5
-        time_range = self.get_time_range()
+        time_range = TimeRanges("HOUR_1")
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
 
         df = bitget_data_util.updating_price_indicators(data_frame=df, prices_history_dict=prices_history)
@@ -238,11 +156,7 @@ class Strategy:
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            
-                self.step_counter,
-                self.ma_50_colum,
-                self.ma_50_ascending_colum,
-                self.ma_100_colum,
-                self.ma_100_ascending_colum,
-                self.ma_150_colum,
-                self.ma_150_ascending_colum
+                DataFrameColum.AO_ASCENDING,
+                DataFrameColum.ADX_ANGLE,
+                DataFrameColum.STOCH_CRUCE_LINE
                 ]])

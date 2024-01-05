@@ -120,9 +120,6 @@ class BitgetDataUtil:
             #self.data_frame_bkp = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=self.data_frame_bkp)
             self.data_frame_bkp = DataFrameCheckUtil.create_ma_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
-
-    
-
     
     def get_crypto_observe_list(self):
         return self.crypto_observe_list
@@ -216,7 +213,7 @@ class BitgetDataUtil:
        
         return True
 
-    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_adx(self, config_adx:ConfigADX=ConfigADX(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
         
         series = config_adx.series
         
@@ -228,10 +225,7 @@ class BitgetDataUtil:
             
             try:
                 
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
+                prices_history = prices_history_dict[symbol]
                 
                 prices_high = prices_history['High'].astype(float)
                 prices_low = prices_history['Low'].astype(float)
@@ -254,7 +248,7 @@ class BitgetDataUtil:
         
         return data_frame  
     
-    def updating_ao(self, time_range:TimeRanges=None, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_ao(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
 
         data_frame = DataFrameCheckUtil.create_ao_columns(data_frame=data_frame)
         
@@ -264,10 +258,7 @@ class BitgetDataUtil:
 
             try:
                 
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
+                prices_history = prices_history_dict[symbol]
                 
                 ao = pandas_ta.ao(high = prices_history['High'].astype(float), low = prices_history['Low'].astype(float))
                 ao_numpy = numpy.array(ao)
@@ -292,7 +283,7 @@ class BitgetDataUtil:
         
         return data_frame  
     
-    def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_stochrsi(self, config_stoch_rsi:ConfigSTOCHrsi = ConfigSTOCHrsi(), data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
         
         long_stoch = config_stoch_rsi.longitud_stoch
         long_rsi = config_stoch_rsi.longitud_rsi
@@ -310,10 +301,7 @@ class BitgetDataUtil:
             
             try:
                 
-                if prices_history_dict == None:
-                    prices_history = self.client_bit.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
+                prices_history = prices_history_dict[symbol]
 
                 open_time_arr = numpy.array(prices_history['Close time'].values)                
                 high = prices_history['High'].astype(float)
@@ -329,12 +317,12 @@ class BitgetDataUtil:
                 #data_frame[DataFrameColum.RSI_STOCH_GOOD_LINE.value][ind] = stochrsi_k_numpy
                 data_frame.loc[ind, DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value] = self.get_last_element(element_list = stochrsi_k_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.RSI_STOCH_GOOD_LINE_ASCENDING.value] = self.list_is_ascending(check_list = stochrsi_k_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.RSI_STOCH_GOOD_LINE_ANGLE.value] = self.angle_one_line(line_points = stochrsi_k_numpy, time_points = open_time_arr, time_range = time_range)
+                #data_frame.loc[ind, DataFrameColum.RSI_STOCH_GOOD_LINE_ANGLE.value] = self.angle_one_line(line_points = stochrsi_k_numpy, time_points = open_time_arr, time_range = time_range)
                 
                 #data_frame[DataFrameColum.RSI_STOCH_BAD_LINE.value][ind] = stochrsi_d_numpy
                 data_frame.loc[ind, DataFrameColum.RSI_STOCH_BAD_LINE_LAST.value] = self.get_last_element(element_list = stochrsi_d_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.RSI_STOCH_BAD_LINE_ASCENDING.value] = self.list_is_ascending(check_list = stochrsi_d_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.RSI_STOCH_BAD_LINE_ANGLE.value] = self.angle_one_line(line_points = stochrsi_d_numpy, time_points = open_time_arr, time_range = time_range)
+                #data_frame.loc[ind, DataFrameColum.RSI_STOCH_BAD_LINE_ANGLE.value] = self.angle_one_line(line_points = stochrsi_d_numpy, time_points = open_time_arr, time_range = time_range)
                 
                 data_frame.loc[ind,DataFrameColum.RSI_STOCH_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(good_series = stochrsi_k_numpy, bad_series = stochrsi_d_numpy, ascending_count = ascending_count, previous_period = previous_period)
 
