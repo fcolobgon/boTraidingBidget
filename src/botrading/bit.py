@@ -102,6 +102,26 @@ class BitgetClienManager:
         return numpy.array(order_ids)
     
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_open_orders_info(self, marginCoin, productType) -> pandas.DataFrame:
+    
+        data = self.client_bit.mix_get_all_open_orders(marginCoin=marginCoin,productType=productType)
+        
+        orders = data["data"]
+        
+        df = pandas.DataFrame([
+            {
+                "symbol": order["symbol"],
+                "posSide": order["posSide"],
+                "totalProfits": order["totalProfits"],
+                "leverage": order["leverage"],
+                "marginMode": order["marginMode"],
+                "orderType": order["orderType"],
+                "ctime": order["ctime"]
+            }
+            for order in orders
+        ])
+    
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
     def get_orders_history(self, productType:str, startTime:datetime) -> pandas.DataFrame:
         
         startTime_ms = int(startTime.timestamp() * 1000)
