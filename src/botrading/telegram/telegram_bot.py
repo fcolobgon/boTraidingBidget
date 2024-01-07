@@ -14,6 +14,9 @@ from src.botrading.utils.dataframe_util import DataFrameUtil
 from pathlib import Path
 import os
 import time
+from datetime import datetime
+
+from configs.config import settings as settings
 
 class TelegramBot:
     
@@ -58,47 +61,15 @@ class TelegramBot:
         excel_util.custom_init(base_path)
     
     def info(self, update:Updater, context:CallbackContext):
-        """
-        buttons = []
 
-        button = InlineKeyboardButton(text='Profit', callback_data='Profit:')
-        buttons.append(button)
-        button = InlineKeyboardButton(text='SellAll', callback_data='sellAll:')
-        buttons.append(button)
-        button = InlineKeyboardButton(text='Status', callback_data='status_buy:')
-        buttons.append(button)
-        
-        keyboard = InlineKeyboardMarkup([buttons])
-        update.message.reply_text('Exchange functionality:', reply_markup=keyboard)
-
-
-        buttons = []        
-        
-        button = InlineKeyboardButton(text='Paused Buy', callback_data='paused_buy:')
-        buttons.append(button)
-        button = InlineKeyboardButton(text='Restart Buy', callback_data='restart_buy:')
-        buttons.append(button)
-        button = InlineKeyboardButton(text='Delete files', callback_data='delete_files:')
-        buttons.append(button)
-        button = InlineKeyboardButton(text='Send files', callback_data='send_files:')
-        buttons.append(button)
-
-        keyboard = InlineKeyboardMarkup([buttons])
-        update.message.reply_text('Bot functionality:', reply_markup=keyboard)
-
-        """
         update.message.reply_text("Comandos disponibles")
 
         update.message.reply_text("/" + str(self.profit_command))
-        #update.message.reply_text("/" + str(self.profit_zero_comission_command))
         update.message.reply_text("/" + str(self.profit_detail_command))
         
         update.message.reply_text("/" + str(self.execution_command))
         update.message.reply_text("/" + str(self.execution_detail_command))
         
-        #update.message.reply_text("/" + str(self.new_coin_command))
-        #update.message.reply_text("/" + str(self.sell_coin_command))
-        #update.message.reply_text("/" + str(self.sell_all_coin_command))
         update.message.reply_text("/" + str(self.stop_bot_with_sell_command))
         
         update.message.reply_text("/" + str(self.pause_buy_command))
@@ -107,145 +78,62 @@ class TelegramBot:
         
         update.message.reply_text("/" + str(self.delete_buy_sell_files_command))
 
-        update.message.reply_text("/" + str(self.send_files_command))
-        #update.message.reply_text("/" + str(self.market_status_command))
-        
-
-
+        update.message.reply_text("/" + str(self.send_files_command))        
 
     def profit(self, update:Updater, context:CallbackContext):
         """Send a message when the command /profit is issued."""
         
-        
-        file_path = self.base_path
-        file_path = file_path + os.path.join("operations")
-        pathlist = Path(file_path).glob('**/*.txt')
-        total = self.calculate_profit(pathlist=pathlist, comission=True)
+        productType = settings.FUTURE_CONTRACT
+        startTime = datetime.now()
+        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
+        total = df['totalProfits'].sum()
         actual_profit = "Profit: " + str(total) + " %"
 
         if update.callback_query:
             update.callback_query.message.edit_text(actual_profit)
         else:
             update.message.reply_text(str(actual_profit))
-        
-        
-    def profit_zero_comission(self, update:Updater, context:CallbackContext):
-        """Send a message when the command /profit is issued."""
-        
-        file_path = self.base_path
-        file_path = file_path + os.path.join("operations")
-        pathlist = Path(file_path).glob('**/*.txt')
-        total = self.calculate_profit(pathlist=pathlist, comission=False)
-        actual_profit = "Profit: " + str(total) + " %"
-        
-        if update.callback_query:
-            update.callback_query.message.edit_text(actual_profit)
-        else:
-            update.message.reply_text(str(actual_profit))
-        
-    
-    def calculate_profit(self, pathlist, comission:bool) -> float:
-        
-        beneficios = []
-
-        for path in pathlist:
-            file = open(path, "r")
-            lines = file.readlines()
-            for line in lines:
-                if line in "\n":
-                    print(" --- ")
-                elif "[-]" not in line:
-                    is_sell = line.find("SELL -")
-                    if is_sell == 0:
-                        start = line.find("BENEFICIO [") + len("BENEFICIO [")
-                        end = line.find("] %")
-                        beneficio = line[start:end]
-                        if beneficio != None:
-                            beneficios.append(float(beneficio))
-            file.close()
-        total = 0
-        for b in beneficios:
-            if comission:
-                total = total + (b - 0.4)
-            else:
-                total = total + b
-        
-        return total
     
     def profit_detail(self, update:Updater, context:CallbackContext):
         """Send a message when the command /profit is issued."""
         
-        file_path = self.base_path
-        file_path = file_path + os.path.join("operations")
-        pathlist = Path(file_path).glob('**/*.txt')
+        productType = settings.FUTURE_CONTRACT
+        startTime = datetime.now()
+        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        for path in pathlist:
-            file = open(path, "r")
+        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
+        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
 
+        for line in lines:
             if update.callback_query:
-                update.callback_query.message.edit_text(file.name)
+                update.callback_query.message.edit_text(line)
             else:
-                update.message.reply_text(str(file.name))
-
-            lines = file.readlines()
-
-            for line in lines:
-                if line not in "\n":
-                    is_sell = line.find("SELL -")
-                    if is_sell == 0:
-
-                        if update.callback_query:
-                            update.callback_query.message.edit_text(line)
-                        else:
-                            update.message.reply_text(str(line))
+                update.message.reply_text(str(line))
                 
-            file.close()
         
     def execution(self, update:Updater, context:CallbackContext):
         """Send a message when the command /execution is issued."""
+        
+        productType = settings.FUTURE_CONTRACT
+        startTime = datetime.now()
+        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        df = self.bit_client.get_open_orders_info(productType=productType, startTime=startTime)
             
-        data_frame = self.buy_thread.get_data_frame()
+        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
+        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
         
-        rules = [ColumStateValues.BUY, ColumStateValues.ERR_SELL]
-        state_query = RuleUtils.get_rules_search_by_states(rules)
-        data_frame = data_frame.query(state_query)  
-        
-        
-        if data_frame.empty == True:
+        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
+
+        for line in lines:
+                
             if update.callback_query:
-                update.callback_query.message.edit_text('No hay ninguna moneda con estado BUY')
+                update.callback_query.message.edit_text(line)
             else:
-                update.message.reply_text(str('No hay ninguna moneda con estado BUY'))
-        else:
-            buttons = []
-            for ind in data_frame.index:
-                
-                base = data_frame[DataFrameColum.BASE.value][ind]
-                symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-                state = data_frame[DataFrameColum.STATE.value][ind]
-                profit = data_frame[DataFrameColum.PERCENTAGE_PROFIT.value][ind]
+                update.message.reply_text(line)
 
-                #context.args = (base,)
-                button = InlineKeyboardButton(text=base, callback_data='sell_coin:' + base)
-                buttons.append(button)
-                
-                if update.callback_query:
-                    update.callback_query.message.edit_text("Coin: " + str(symbol) + " | " + "Profit: " + str(profit))
-                else:
-                    update.message.reply_text(str("Coin: " + str(symbol) + " | " + "Profit: " + str(profit)))
-
-                
-                #update.message.reply_text("Estado " + str(state) )
-                #update.message.reply_text("Beneficio " + str(profit))
-            button = InlineKeyboardButton(text='¡ALL!', callback_data='sellAll:')
-            buttons.append(button)
-
-            keyboard = InlineKeyboardMarkup([buttons])
-
-            if update.callback_query:
-                update.callback_query.message.edit_text('Seleccione una moneda para vender:', reply_markup=keyboard)
-            else:
-                update.message.reply_text('Seleccione una moneda para vender:', reply_markup=keyboard)
 
     def button(self, update:Updater, context:CallbackContext):
 
@@ -303,24 +191,6 @@ class TelegramBot:
                     update.message.reply_text("Moneda " + str(symbol) )
                     update.message.reply_text("Estado " + str(state) )
                     update.message.reply_text("Benficio " + str(profit))
-    
-    def new_coin(self, update:Updater, context:CallbackContext):
-        
-        data_frame = self.buy_thread.get_data_frame()
-        data_frame =self.Bitget_data_util.find_new_cryptos(data_frame)
-        
-        if data_frame.empty == True:
-            update.message.reply_text('No hay nuevas monedas en Binance')
-        else:
-            
-            for ind in data_frame.index:
-                
-                base = data_frame[DataFrameColum.BASE.value][ind]
-                symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-                
-                update.message.reply_text("https://www.binance.com/es/trade/" + str(base) + "_USDT")
-                update.message.reply_text("Moneda " + str(symbol) )
-
         
     def sell_coin(self, update:Updater, context:CallbackContext):
         
@@ -520,8 +390,6 @@ class TelegramBot:
         dp.add_handler(CommandHandler(self.market_status_command, self.market_status))
 
         dp.add_handler(CallbackQueryHandler(self.button))
-        
-        
         
         # Start the Bot
         updater.start_polling()
