@@ -64,8 +64,8 @@ class Strategy:
             self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
         
-        df[DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-        return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
+        #df[DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+        #return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
