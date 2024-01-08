@@ -12,12 +12,7 @@ from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
 from configs.config import settings as settings
 
-def check_open_order(clnt_bit: BitgetClienManager, order_id:str) -> bool:
-    
-    open_orders = get_open_orders(clnt_bit=clnt_bit)
-    return numpy.isin(open_orders, order_id)
-
-def get_open_orders(clnt_bit: BitgetClienManager) -> numpy:
+def get_open_orders(clnt_bit: BitgetClienManager) -> pandas.DataFrame:
     
     margin_coin = settings.MARGINCOIN
     productType = settings.FUTURE_CONTRACT
@@ -25,8 +20,10 @@ def get_open_orders(clnt_bit: BitgetClienManager) -> numpy:
     if settings.BITGET_CLIENT_TEST_MODE == True:
         margin_coin = 'S' + settings.MARGINCOIN
         productType = 'S' + settings.FUTURE_CONTRACT
-    
-    return clnt_bit.get_open_orders(marginCoin=margin_coin,productType=productType)
+
+    orders = clnt_bit.get_open_orders(marginCoin=margin_coin,productType=productType)
+
+    return orders
     
 """_summary_
     sideType: short o long
@@ -66,11 +63,14 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                     #continue
         
             if percentage_profit_flag:
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
-            else:
+                takeProfit = round(float(takeProfit) * 10) / 10
+                stopLoss = round(float(stopLoss) * 10) / 10
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+            else:
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
                 
             if order['msg'] == 'success':
+                print(order)
                 orderInfo = order['data']
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
                 df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   

@@ -55,7 +55,7 @@ class TelegramBot:
         self.bit_client = bit_client
         self.buy_thread = buy_thread
         self.sell_thread = sell_thread
-        self.Bitget_data_util = buy_thread.get_Bitget_data_util()
+        self.Bitget_data_util = buy_thread.bitget_data_util
         self.bot_token = bot_token
         self.base_path = base_path
         excel_util.custom_init(base_path)
@@ -83,13 +83,21 @@ class TelegramBot:
     def profit(self, update:Updater, context:CallbackContext):
         """Send a message when the command /profit is issued."""
         
+        actual_profit = 0
+        
         productType = settings.FUTURE_CONTRACT
+        
+        if settings.BITGET_CLIENT_TEST_MODE == True:
+            productType = 'S' + settings.FUTURE_CONTRACT
+        
         startTime = datetime.now()
         startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
-        total = df['totalProfits'].sum()
-        actual_profit = "Profit: " + str(total) + " %"
+        df = self.bit_client.get_orders_history(productType=productType, startTime=startTime)
+        
+        if df.empty == False:
+            total = df['totalProfits'].sum()
+            actual_profit = "Profit: " + str(total) + " %"
 
         if update.callback_query:
             update.callback_query.message.edit_text(actual_profit)
@@ -100,11 +108,20 @@ class TelegramBot:
         """Send a message when the command /profit is issued."""
         
         productType = settings.FUTURE_CONTRACT
+        
+        if settings.BITGET_CLIENT_TEST_MODE == True:
+            productType = 'S' + settings.FUTURE_CONTRACT
+        
         startTime = datetime.now()
         startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
-        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
+        df = self.bit_client.get_orders_history(productType=productType, startTime=startTime)
+        column_titles = df.columns.tolist()
+
+        lines = []
+        for index, row in df.iterrows():
+            row_values = [f"{column}: {row[column]}" for column in column_titles]
+            lines.append('\n'.join(row_values))
 
         for line in lines:
             if update.callback_query:
@@ -119,8 +136,6 @@ class TelegramBot:
         productType = settings.FUTURE_CONTRACT
         startTime = datetime.now()
         startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        df = self.bit_client.get_open_orders_info(productType=productType, startTime=startTime)
             
         df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
         lines = df.astype(str).apply(' | '.join, axis=1).tolist()
@@ -369,13 +384,11 @@ class TelegramBot:
         dp.add_handler(CommandHandler(self.info_command, self.info))
         
         dp.add_handler(CommandHandler(self.profit_command, self.profit))
-        dp.add_handler(CommandHandler(self.profit_zero_comission_command, self.profit_zero_comission))
         dp.add_handler(CommandHandler(self.profit_detail_command, self.profit_detail))
         
         dp.add_handler(CommandHandler(self.execution_command, self.execution))
         dp.add_handler(CommandHandler(self.execution_detail_command, self.execution_detail))
         
-        dp.add_handler(CommandHandler(self.new_coin_command, self.new_coin))
         dp.add_handler(CommandHandler(self.sell_coin_command, self.sell_coin))
         dp.add_handler(CommandHandler(self.sell_all_coin_command, self.sell_all_coin))
         dp.add_handler(CommandHandler(self.stop_bot_with_sell_command, self.stop_bot_with_sell))

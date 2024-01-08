@@ -91,35 +91,13 @@ class BitgetClienManager:
         return float(self.client_bit.mix_get_market_price(symbol=symbol)["data"]["markPrice"])
     
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
-    def get_open_orders(self, marginCoin, productType) -> numpy:
+    def get_open_orders(self, marginCoin, productType) -> pandas.DataFrame:
     
-        orders = self.client_bit.mix_get_all_open_orders(marginCoin=marginCoin,productType=productType)
-        
-        order_ids = []
-        for order in orders["data"]:
-            order_ids.append(order["orderId"])
-
-        return numpy.array(order_ids)
-    
-    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
-    def get_open_orders_info(self, marginCoin, productType) -> pandas.DataFrame:
-    
-        data = self.client_bit.mix_get_all_open_orders(marginCoin=marginCoin,productType=productType)
+        data = self.client_bit.mix_get_all_positions(marginCoin=marginCoin,productType=productType)
         
         orders = data["data"]
         
-        df = pandas.DataFrame([
-            {
-                "symbol": order["symbol"],
-                "posSide": order["posSide"],
-                "totalProfits": order["totalProfits"],
-                "leverage": order["leverage"],
-                "marginMode": order["marginMode"],
-                "orderType": order["orderType"],
-                "ctime": order["ctime"]
-            }
-            for order in orders
-        ])
+        return pandas.DataFrame(orders)
     
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
     def get_orders_history(self, productType:str, startTime:datetime) -> pandas.DataFrame:
@@ -127,8 +105,16 @@ class BitgetClienManager:
         startTime_ms = int(startTime.timestamp() * 1000)
         endTime_ms = int(datetime.now().timestamp() * 1000)
         
-        data = self.client_bit.mix_get_productType_history_orders(productType=productType, startTime=startTime_ms, endTime=endTime_ms, pageSize=100)["data"]
-        orders = data["orderList"]
+        end_time_formatted = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        
+        productType = productType.upper()
+        
+        data = self.client_bit.mix_get_productType_history_orders(productType=productType, startTime=startTime_ms, endTime=endTime_ms, pageSize=100)
+        dataOrder = data["data"]
+        orders = dataOrder["orderList"]
+        
+        if not orders:
+            return pandas.DataFrame()
         
         df = pandas.DataFrame([
             {
@@ -139,7 +125,7 @@ class BitgetClienManager:
                 "leverage": order["leverage"],
                 "marginMode": order["marginMode"],
                 "orderType": order["orderType"],
-                "ctime": order["ctime"]
+                "cTime": f'End Time: {end_time_formatted} ({order["cTime"]} ms)'
             }
             for order in orders
         ])

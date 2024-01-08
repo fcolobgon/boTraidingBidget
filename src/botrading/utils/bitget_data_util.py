@@ -154,8 +154,14 @@ class BitgetDataUtil:
         
         for ind in data_frame.index:
             
-            order_id = data_frame.loc[ind, DataFrameColum.ORDER_ID.value]
-            data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = traiding_operations.check_open_order(clnt_bit=self.client_bit, order_id=order_id)
+            symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
+            type = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
+            
+            df = traiding_operations.get_open_orders(clnt_bit=self.client_bit)
+            contain_symbol = df[DataFrameColum.SYMBOL.value].apply(lambda x: any(s in x for s in symbol)).any()
+            contain_type = df["holdSide"].apply(lambda x: any(t in x for t in type)).any()
+            exist = contain_symbol & contain_type
+            data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = exist.any()
 
         return data_frame
     
