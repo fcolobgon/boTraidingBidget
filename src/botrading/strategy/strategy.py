@@ -64,8 +64,7 @@ class Strategy:
             self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
         
-        #df[DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-        #return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
+        return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
@@ -178,6 +177,21 @@ class Strategy:
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 
         return pandas.DataFrame()
+    
+    def return_for_buy_test(self, bitget_data_util: BitgetDataUtil, df: pandas.DataFrame) -> pandas.DataFrame:
+        
+        for ind in df.index:
+            
+            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  45000
+            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = 44500
+            df.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
+            df.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
+            df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+            df.loc[ind, self.step_counter] = 5
+            df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+            
+        self.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
+        return df
     
     def return_for_buy(self, bitget_data_util: BitgetDataUtil, df: pandas.DataFrame) -> pandas.DataFrame:
         

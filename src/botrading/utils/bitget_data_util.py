@@ -152,12 +152,13 @@ class BitgetDataUtil:
     
     def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame()):
         
+        df = traiding_operations.get_open_orders(clnt_bit=self.client_bit)
+        print(df)
         for ind in data_frame.index:
             
             symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
             type = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
             
-            df = traiding_operations.get_open_orders(clnt_bit=self.client_bit)
             contain_symbol = df[DataFrameColum.SYMBOL.value].apply(lambda x: any(s in x for s in symbol)).any()
             contain_type = df["holdSide"].apply(lambda x: any(t in x for t in type)).any()
             exist = contain_symbol & contain_type
