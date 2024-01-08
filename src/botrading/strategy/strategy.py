@@ -24,6 +24,7 @@ class Strategy:
     ma_100_ascending_colum = "MA_100_ASCENDING"
     ma_150_colum = "MA_150"
     ma_150_ascending_colum = "MA_150_ASCENDING"
+    startTime:datetime
     
     
     def __init__(self, name:str):
@@ -36,6 +37,8 @@ class Strategy:
         self.ma_100_ascending_colum = "MA_100_ASCENDING"
         self.ma_150_colum = "MA_150"
         self.ma_150_ascending_colum = "MA_150_ASCENDING"
+        self.startTime = datetime.now()
+        self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
         
     def get_time_range(self) -> TimeRanges:
         return TimeRanges("MINUTES_5")
@@ -240,8 +243,8 @@ class Strategy:
             return pandas.DataFrame()
         else:
             
-            df = bitget_data_util.updating_open_orders(data_frame=df)
-            df.loc[~df[DataFrameColum.ORDER_OPEN.value], DataFrameColum.STATE.value] = ColumStateValues.SELL.value
+            df =  bitget_data_util.updating_open_orders(data_frame=df, startTime=self.startTime)
+            self.print_data_frame(message="VENTA ", data_frame=df)
             return df
     
     
@@ -251,6 +254,7 @@ class Strategy:
             print(message)
             print("#####################################################################################################################")
             print(data_frame[[
+                DataFrameColum.ORDER_ID.value,
                 DataFrameColum.BASE.value,
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,

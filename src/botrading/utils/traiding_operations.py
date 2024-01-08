@@ -12,16 +12,14 @@ from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 
 from configs.config import settings as settings
 
-def get_open_orders(clnt_bit: BitgetClienManager) -> pandas.DataFrame:
+def get_open_orders(clnt_bit: BitgetClienManager, startTime:datetime) -> pandas.DataFrame:
     
-    margin_coin = settings.MARGINCOIN
     productType = settings.FUTURE_CONTRACT
     
     if settings.BITGET_CLIENT_TEST_MODE == True:
-        margin_coin = 'S' + settings.MARGINCOIN
         productType = 'S' + settings.FUTURE_CONTRACT
 
-    orders = clnt_bit.get_open_orders(marginCoin=margin_coin,productType=productType)
+    orders = clnt_bit.get_orders_history(productType=productType, startTime=startTime)
 
     return orders
     

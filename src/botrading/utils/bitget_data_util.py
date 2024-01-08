@@ -150,20 +150,28 @@ class BitgetDataUtil:
 
         return dict_values
     
-    def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame()):
+    def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame(), startTime:datetime=None):
         
-        df = traiding_operations.get_open_orders(clnt_bit=self.client_bit)
-        print(df)
+        df = traiding_operations.get_open_orders(clnt_bit=self.client_bit, startTime=startTime)
+        #print(df)
         for ind in data_frame.index:
             
-            symbol = data_frame.loc[ind, DataFrameColum.SYMBOL.value]
-            type = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
-            
-            contain_symbol = df[DataFrameColum.SYMBOL.value].apply(lambda x: any(s in x for s in symbol)).any()
-            contain_type = df["holdSide"].apply(lambda x: any(t in x for t in type)).any()
-            exist = contain_symbol & contain_type
-            data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = exist.any()
+            order = data_frame[DataFrameColum.ORDER_ID.value][ind]
+            #print(order)
+            row_values = df.loc[df['orderId'] == order]
+            #print(row_values)
+            if row_values.empty == False:
 
+                state = row_values['state'].values[0]
+                #print(state)
+                profit = row_values['totalProfits'].values[0]   
+                #print(profit)      
+                data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value] = profit
+                
+                if state == "canceled":
+                    data_frame.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.SELL.value
+            
+            
         return data_frame
     
     def updating_price_indicators(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):

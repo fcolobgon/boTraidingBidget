@@ -69,7 +69,7 @@ class BitgetSellThreed(threading.Thread):
                     data_frame_sell_now = data_frame_for_sell.query(state_query)
 
                     if data_frame_sell_now.empty:
-                        print("No hay monedas para vender ahora!!")
+                        #print("No hay monedas para vender ahora!!")
                         self.buy_thread.merge_dataframes(update_data_frame=data_frame_for_sell)
                     else:
                         df_sell = traiding_operations.logic_sell(clnt_bit=self.client_bit, df_sell=data_frame_sell_now)

@@ -1,16 +1,12 @@
 from multiprocessing.connection import wait
 import platform
 import pandas
-import numpy
 from datetime import datetime, timedelta
 from datetime import datetime
 
 from tenacity import retry, stop_after_attempt, stop_after_delay
-from binance import helpers
 from pybitget import Client
-from binance.exceptions import BinanceAPIException, BinanceOrderException
 
-from src.botrading.constants import botrading_constant
 
 
 class BitgetClienManager:
@@ -105,7 +101,7 @@ class BitgetClienManager:
         startTime_ms = int(startTime.timestamp() * 1000)
         endTime_ms = int(datetime.now().timestamp() * 1000)
         
-        end_time_formatted = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+        #end_time_formatted = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
         
         productType = productType.upper()
         
@@ -118,14 +114,19 @@ class BitgetClienManager:
         
         df = pandas.DataFrame([
             {
+                "orderId": order["orderId"],
                 "symbol": order["symbol"],
                 "fee": order["fee"],
+                "state": order["state"],
                 "posSide": order["posSide"],
                 "totalProfits": order["totalProfits"],
                 "leverage": order["leverage"],
                 "marginMode": order["marginMode"],
                 "orderType": order["orderType"],
-                "cTime": f'End Time: {end_time_formatted} ({order["cTime"]} ms)'
+                "cTime": datetime.fromtimestamp(int(order["cTime"])/ 1000),
+                "uTime": datetime.fromtimestamp(int(order["uTime"])/ 1000)
+                #"cTime": f'End Time: {end_time_formatted} ({order["cTime"]} ms)',
+                #"uTime": f'Update Time: {end_time_formatted} ({order["uTime"]} ms)'
             }
             for order in orders
         ])
