@@ -10,6 +10,7 @@ from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.future_values import FutureValues
+from src.botrading.telegram.telegram_notify import TelegramNotify
 
 from configs.config import settings as settings
 
@@ -165,6 +166,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price > ma_50:
+                    TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
             
             if step == 4: #SHORT
@@ -177,6 +179,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price < ma_50:
+                    TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 
         return pandas.DataFrame()
@@ -244,6 +247,14 @@ class Strategy:
         else:
             
             df =  bitget_data_util.updating_open_orders(data_frame=df, startTime=self.startTime)
+            
+            if df.empty == False:
+                query = DataFrameColum.ORDER_OPEN.value + " == False"      
+                sell_df = df.query(query)
+                if sell_df.empty == False:
+                    TelegramNotify.notify_sell(settings=settings, dataframe=sell_df)
+                    return sell_df
+            
             self.print_data_frame(message="VENTA ", data_frame=df)
             return df
     
