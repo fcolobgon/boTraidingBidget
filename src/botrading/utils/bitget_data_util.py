@@ -153,22 +153,20 @@ class BitgetDataUtil:
     def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame(), startTime:datetime=None):
         
         df = traiding_operations.get_open_positions(clnt_bit=self.client_bit)
-        print(df)
+
         for ind in data_frame.index:
             
             symbol = data_frame.loc[ind, DataFrameColum.BASE.value]
             sideType = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
-            print(symbol)
+
             row_values = df[df["symbol"].str.contains(symbol)& (df['holdSide'] == sideType)] 
-            print(row_values)
+
             if row_values.empty == False:
 
                 profit = float(row_values["unrealizedPL"].values[0] )  
-                print(profit)      
                 data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value] = profit
                 
                 position = float(row_values["total"].values[0])
-                print(position)
                 
                 if position == 0:
                     data_frame.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.SELL.value
