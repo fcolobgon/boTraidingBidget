@@ -111,24 +111,18 @@ class BitgetClienManager:
         
         if not orders:
             return pandas.DataFrame()
+                
+        return pandas.DataFrame(orders)
+    
+    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
+    def get_open_positions(self, productType:str) -> pandas.DataFrame:
+                
+        productType = productType.upper()
         
-        df = pandas.DataFrame([
-            {
-                "orderId": order["orderId"],
-                "symbol": order["symbol"],
-                "fee": order["fee"],
-                "state": order["state"],
-                "posSide": order["posSide"],
-                "totalProfits": order["totalProfits"],
-                "leverage": order["leverage"],
-                "marginMode": order["marginMode"],
-                "orderType": order["orderType"],
-                "cTime": datetime.fromtimestamp(int(order["cTime"])/ 1000),
-                "uTime": datetime.fromtimestamp(int(order["uTime"])/ 1000)
-                #"cTime": f'End Time: {end_time_formatted} ({order["cTime"]} ms)',
-                #"uTime": f'Update Time: {end_time_formatted} ({order["uTime"]} ms)'
-            }
-            for order in orders
-        ])
+        data = self.client_bit.mix_get_all_positions(productType=productType)
+        positions = data["data"]
         
-        return df
+        if not positions:
+            return pandas.DataFrame()
+                
+        return pandas.DataFrame(positions)

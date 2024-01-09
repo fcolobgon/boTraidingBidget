@@ -24,6 +24,7 @@ class Strategy:
     ma_100_ascending_colum = "MA_100_ASCENDING"
     ma_150_colum = "MA_150"
     ma_150_ascending_colum = "MA_150_ASCENDING"
+    startTime:datetime
     
     
     def __init__(self, name:str):
@@ -36,6 +37,8 @@ class Strategy:
         self.ma_100_ascending_colum = "MA_100_ASCENDING"
         self.ma_150_colum = "MA_150"
         self.ma_150_ascending_colum = "MA_150_ASCENDING"
+        self.startTime = datetime.now()
+        self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
         
     def get_time_range(self) -> TimeRanges:
         return TimeRanges("MINUTES_5")
@@ -44,7 +47,7 @@ class Strategy:
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
-        rules = [ColumStateValues.WAIT]
+        rules = [ColumStateValues.WAIT, ColumStateValues.SELL]
         state_query = RuleUtils.get_rules_search_by_states(rules)
         df = data_frame.query(state_query)
         
@@ -63,6 +66,8 @@ class Strategy:
             self.first_iteration = False
             self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
+        
+        #return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
@@ -176,6 +181,21 @@ class Strategy:
                 
         return pandas.DataFrame()
     
+    def return_for_buy_test(self, bitget_data_util: BitgetDataUtil, df: pandas.DataFrame) -> pandas.DataFrame:
+        
+        for ind in df.index:
+            
+            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  47000
+            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = 45000
+            df.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
+            df.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
+            df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+            df.loc[ind, self.step_counter] = 5
+            df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+            
+        self.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
+        return df
+    
     def return_for_buy(self, bitget_data_util: BitgetDataUtil, df: pandas.DataFrame) -> pandas.DataFrame:
         
         profit_percentage = 0.5
@@ -223,8 +243,8 @@ class Strategy:
             return pandas.DataFrame()
         else:
             
-            df = bitget_data_util.updating_open_orders(data_frame=df)
-            df.loc[~df[DataFrameColum.ORDER_OPEN.value], DataFrameColum.STATE.value] = ColumStateValues.SELL.value
+            df =  bitget_data_util.updating_open_orders(data_frame=df, startTime=self.startTime)
+            self.print_data_frame(message="VENTA ", data_frame=df)
             return df
     
     
@@ -234,7 +254,9 @@ class Strategy:
             print(message)
             print("#####################################################################################################################")
             print(data_frame[[
+                DataFrameColum.ORDER_ID.value,
                 DataFrameColum.BASE.value,
+                DataFrameColum.PERCENTAGE_PROFIT.value,
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            

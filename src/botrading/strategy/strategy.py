@@ -47,7 +47,7 @@ class Strategy:
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
-        rules = [ColumStateValues.WAIT]
+        rules = [ColumStateValues.WAIT, ColumStateValues.SELL]
         state_query = RuleUtils.get_rules_search_by_states(rules)
         df = data_frame.query(state_query)
         
@@ -67,7 +67,7 @@ class Strategy:
             self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
         
-        return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
+        #return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
@@ -185,8 +185,8 @@ class Strategy:
         
         for ind in df.index:
             
-            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  45000
-            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = 44500
+            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  47000
+            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = 45000
             df.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
             df.loc[ind, DataFrameColum.LEVEREAGE.value] = 5
             df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
@@ -256,6 +256,7 @@ class Strategy:
             print(data_frame[[
                 DataFrameColum.ORDER_ID.value,
                 DataFrameColum.BASE.value,
+                DataFrameColum.PERCENTAGE_PROFIT.value,
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            

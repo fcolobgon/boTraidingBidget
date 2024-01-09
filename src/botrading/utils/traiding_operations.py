@@ -22,6 +22,17 @@ def get_open_orders(clnt_bit: BitgetClienManager, startTime:datetime) -> pandas.
     orders = clnt_bit.get_orders_history(productType=productType, startTime=startTime)
 
     return orders
+
+def get_open_positions(clnt_bit: BitgetClienManager) -> pandas.DataFrame:
+    
+    productType = settings.FUTURE_CONTRACT
+    
+    if settings.BITGET_CLIENT_TEST_MODE == True:
+        productType = 'S' + settings.FUTURE_CONTRACT
+
+    positions = clnt_bit.get_open_positions(productType=productType)
+
+    return positions
     
 """_summary_
     sideType: short o long

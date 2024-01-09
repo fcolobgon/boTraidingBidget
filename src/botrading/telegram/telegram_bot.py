@@ -134,13 +134,18 @@ class TelegramBot:
         """Send a message when the command /execution is issued."""
         
         productType = settings.FUTURE_CONTRACT
-        startTime = datetime.now()
-        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
-            
-        df = self.bit_client.get_open_orders(productType=productType, startTime=startTime)
-        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
         
-        lines = df.astype(str).apply(' | '.join, axis=1).tolist()
+        if settings.BITGET_CLIENT_TEST_MODE == True:
+            productType = 'S' + settings.FUTURE_CONTRACT
+            
+        df = self.bit_client.get_open_positions(productType=productType)
+        
+        df_filtered = df[df['total'] != '0']
+
+        lines = []
+        for index, row in df_filtered.iterrows():
+            line = f"Symbol: {row['symbol']}, HoldSide: {row['holdSide']}, Total: {row['total']}, Leverage: {row['leverage']}, UnrealizedPL: {row['unrealizedPL']}"
+            lines.append(line)
 
         for line in lines:
                 
