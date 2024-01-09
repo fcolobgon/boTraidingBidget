@@ -169,7 +169,7 @@ class BitgetDataUtil:
                 position = float(row_values["total"].values[0])
                 
                 if position == 0:
-                    data_frame.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.SELL.value
+                    data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = False
             
             
         return data_frame
