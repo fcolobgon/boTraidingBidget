@@ -122,13 +122,13 @@ class Strategy:
                     self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
                     return df
                 
-                if ma_50 < ma_100 and ma_100 < ma_150:
-                    if not ma_50_ascending and not ma_100_ascending and not ma_150_ascending:
-                        df.loc[ind, self.step_counter] = 2
-                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-                
-                        self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
-                        return df
+            if ma_50 < ma_100 and ma_100 < ma_150:
+                if not ma_50_ascending and not ma_100_ascending and not ma_150_ascending:
+                    df.loc[ind, self.step_counter] = 2
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+            
+                    self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
+                    return df
             
             if step == 1: #LONG
                 
@@ -166,6 +166,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price > ma_50:
+                    df = df[df[DataFrameColum.SYMBOL.value] == symbol]
                     TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
             
@@ -179,6 +180,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price < ma_50:
+                    df = df[df[DataFrameColum.SYMBOL.value] == symbol]
                     TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 
