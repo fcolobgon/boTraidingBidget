@@ -37,6 +37,6 @@ if __name__ == '__main__':
     """
     bit_market_client = BitgetClienManager(api_key = settings.MARKET_API_KEY_BIN, api_secret = settings.MARKET_SECRET_KEY_BIN)
     """
-    telegram_bot = TelegramBot(bit_client = client_bit, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
-    telegram_bot.start()
+    #telegram_bot = TelegramBot(bit_client = client_bit, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
+    #telegram_bot.start()
     

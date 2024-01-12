@@ -214,3 +214,4 @@ cython_debug/
 /.metadata
 /configs/settings.toml
 /.vscode/launch.json
+/configs/settings.toml

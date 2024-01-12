@@ -3,19 +3,18 @@ import pandas
 
 from src.botrading.utils import excel_util
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
-from src.botrading.utils.bitget_data_util import BinanceDataUtil
 from src.botrading.thread.enums.binance_market_status import BinanceMarketStatus
 
 class PriceUtil:
-    
+    """
     @staticmethod
-    def wait_good_price_df(binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    def wait_good_price_df(binance_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
         df = PriceUtil.wait_ascending_price(binance_data_util=binance_data_util, data_frame=data_frame)
         return PriceUtil.wait_descending_price(binance_data_util=binance_data_util, data_frame=df)
     
     @staticmethod
-    def wait_good_price(binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> bool:
+    def wait_good_price(binance_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> bool:
         
         PriceUtil.wait_ascending_price(binance_data_util=binance_data_util, data_frame=data_frame)
         PriceUtil.wait_descending_price(binance_data_util=binance_data_util, data_frame=data_frame)
@@ -23,7 +22,7 @@ class PriceUtil:
         return True
     
     @staticmethod
-    def wait_ascending_price(binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    def wait_ascending_price(binance_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
 
         aux_data_frame = data_frame.head(1)
         aux_data_frame = binance_data_util.updating_price(data_frame = aux_data_frame)
@@ -45,7 +44,7 @@ class PriceUtil:
         return aux_data_frame   
     
     @staticmethod
-    def wait_descending_price(binance_data_util: BinanceDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    def wait_descending_price(binance_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
 
         aux_data_frame = data_frame.head(1)
         aux_data_frame = binance_data_util.updating_price(data_frame = aux_data_frame)
@@ -65,6 +64,7 @@ class PriceUtil:
                     exit = True
                
         return aux_data_frame
+    """
 
     @staticmethod
     def check_accumulated_take_profit(data_frame: pandas.DataFrame, profit:int) -> bool:
@@ -142,3 +142,10 @@ class PriceUtil:
             data_frame[DataFrameColum.TAKE_PROFIT.value] = on_fire 
                     
         return data_frame
+
+    @staticmethod
+    def calculate_valid_price(price, price_place, price_end_step, volume_place):    
+
+            adjusted_btc_amount = round(price, volume_place)
+
+            return adjusted_btc_amount

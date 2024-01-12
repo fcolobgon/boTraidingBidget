@@ -33,8 +33,6 @@ if __name__ == '__main__':
     apalancamiento = 5
 
     cantidad = float(apuesta_usdt / (precio_entrada * apalancamiento))
-    costo = cantidad * precio_entrada
-    costo_total = apuesta_usdt * precio_entrada * apalancamiento
     costo2 = cantidad * precio_entrada * apalancamiento
     size = (apuesta_usdt / precio_entrada) * apalancamiento
 

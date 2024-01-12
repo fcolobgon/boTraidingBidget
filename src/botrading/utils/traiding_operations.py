@@ -54,7 +54,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         volume_place = int(df_buy.loc[ind,DataFrameColum.VOLUMEPLACE.value])
 
         try:
-            size = TradingUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, leverage = levereage)
+            size, price_coin_buy = TradingUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, leverage = int(levereage))
 
             #Solo se ejecuta en para modo TEST
             if settings.BITGET_CLIENT_TEST_MODE == True:
@@ -77,8 +77,8 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                     #continue
         
             if percentage_profit_flag:
-                takeProfit = round(float(takeProfit) * 10) / 10 #! NO HACE FALTA REDONDEAR
-                stopLoss = round(float(stopLoss) * 10) / 10     #! NO HACE FALTA REDONDEAR
+                takeProfit = float(takeProfit)
+                stopLoss = float(stopLoss)
                 
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
@@ -283,9 +283,7 @@ class TradingUtil:
     def calculate_size_with_leverage(clnt_bit: BitgetClienManager, symbol, quantity_usdt, leverage):
 
         price_coin = float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
-
         size = (quantity_usdt / price_coin) * leverage
-        size = math.ceil(size)
 
-        return size
+        return size, price_coin
 
