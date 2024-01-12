@@ -9,6 +9,8 @@ from src.botrading.constants import botrading_constant
 from src.botrading.utils import excel_util
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
+from src.botrading.utils.price_util import PriceUtil
+import math
 
 from configs.config import settings as settings
 
@@ -47,9 +49,12 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         takeProfit = str(df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value])
         stopLoss = str(df_buy.loc[ind,DataFrameColum.STOP_LOSS.value])
         margin_coin = settings.MARGINCOIN
+        price_place = int(df_buy.loc[ind,DataFrameColum.PRICEPLACE.value])
+        price_end_step = int(df_buy.loc[ind,DataFrameColum.PRICEENDSTEP.value])
+        volume_place = int(df_buy.loc[ind,DataFrameColum.VOLUMEPLACE.value])
 
         try:
-            price_convert_coin, price_coin_buy = TradingUtil.convert_price_usdt_to_coin(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, symbol=symbol)
+            size, price_coin_buy = TradingUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, leverage = int(levereage))
 
             #Solo se ejecuta en para modo TEST
             if settings.BITGET_CLIENT_TEST_MODE == True:
@@ -72,11 +77,12 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                     #continue
         
             if percentage_profit_flag:
-                takeProfit = round(float(takeProfit) * 10) / 10
-                stopLoss = round(float(stopLoss) * 10) / 10
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+                takeProfit = float(takeProfit)
+                stopLoss = float(stopLoss)
+                
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = price_convert_coin, side = 'open_' + sideType, orderType = 'market')
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
                 
             if order['msg'] == 'success':
                 print(order)
@@ -272,4 +278,12 @@ class TradingUtil:
 
         # Realizar la conversión de USDT a la moneda específica
         return float(qtty_coin_buy) * float(price_coin), price_coin
+
+    @staticmethod
+    def calculate_size_with_leverage(clnt_bit: BitgetClienManager, symbol, quantity_usdt, leverage):
+
+        price_coin = float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
+        size = (quantity_usdt / price_coin) * leverage
+
+        return size, price_coin
 

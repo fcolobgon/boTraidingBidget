@@ -68,7 +68,7 @@ class Strategy:
             self.print_data_frame(message="CREADO DATAFRAME", data_frame=df)
             return df
         
-        #return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
+        return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
         time_range = self.get_time_range()
@@ -166,6 +166,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price > ma_50:
+                    df = df[df[DataFrameColum.SYMBOL.value] == symbol]
                     TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
             
@@ -179,6 +180,7 @@ class Strategy:
                 ma_50 = df.loc[ind, self.ma_50_colum]
                 
                 if previous_price < ma_50:
+                    df = df[df[DataFrameColum.SYMBOL.value] == symbol]
                     TelegramNotify.notify_buy(settings=settings, dataframe=df)
                     return self.return_for_buy(bitget_data_util=bitget_data_util, df=df)
                 

@@ -29,14 +29,16 @@ if __name__ == '__main__':
     # Obtener el precio actual de la moneda en USDT
     precio_entrada = float(client_bit.client_bit.mix_get_single_symbol_ticker(symbol="BTCUSDT_UMCBL")['data']['last'])
 
-    apuesta_usdt= 20
-    apalancamiento = 10
+    apuesta_usdt= 19
+    apalancamiento = 5
 
     cantidad = float(apuesta_usdt / (precio_entrada * apalancamiento))
-    costo = cantidad * precio_entrada
-    costo_total = apuesta_usdt * precio_entrada * apalancamiento
+    costo2 = cantidad * precio_entrada * apalancamiento
+    size = (apuesta_usdt / precio_entrada) * apalancamiento
 
     print (format(cantidad, '.5f'))
     print (costo)
     print (costo_total)
+    print (costo2)
+    print (size)
 

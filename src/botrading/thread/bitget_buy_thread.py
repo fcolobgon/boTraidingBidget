@@ -197,3 +197,4 @@ class BitgetBuyThreed(threading.Thread):
         else:
             print("No puedes comprar monedas según el máximo establecido " + str(self.max_coin_buy))
             return pandas.DataFrame()
+        
