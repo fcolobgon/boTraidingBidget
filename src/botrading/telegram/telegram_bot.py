@@ -92,6 +92,9 @@ class TelegramBot:
         
         startTime = datetime.now()
         startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        #if df.empty == False:
+        #    update.message.reply_text("No hay operaciones")
 
         df = self.bit_client.get_orders_history(productType=productType, startTime=startTime)
         
@@ -116,6 +119,10 @@ class TelegramBot:
         startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
         df = self.bit_client.get_orders_history(productType=productType, startTime=startTime)
+        
+        #if df.empty == False:
+        #    update.message.reply_text("No hay operaciones")
+        
         column_titles = df.columns.tolist()
 
         lines = []
@@ -139,6 +146,9 @@ class TelegramBot:
             productType = 'S' + settings.FUTURE_CONTRACT
             
         df = self.bit_client.get_open_positions(productType=productType)
+        
+        #if df.empty == False:
+        #    update.message.reply_text("No hay operaciones")
         
         df_filtered = df[df['total'] != '0']
 
