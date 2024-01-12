@@ -82,7 +82,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market')
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
                 
             if order['msg'] == 'success':
                 print(order)
