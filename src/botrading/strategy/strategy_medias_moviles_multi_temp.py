@@ -130,7 +130,7 @@ class Strategy:
             
             if ma_50 > ma_100 and ma_100 > ma_150:
                 #if ma_50_ascending and ma_100_ascending and ma_150_ascending:
-                if self.step_counter != 1:
+                if step != 1:
                     df.loc[ind, self.step_counter] = 1
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
                         
@@ -139,7 +139,7 @@ class Strategy:
                 
             if ma_50 < ma_100 and ma_100 < ma_150:
                 #if not ma_50_ascending and not ma_100_ascending and not ma_150_ascending:
-                if self.step_counter != 2:
+                if step != 2:
                     df.loc[ind, self.step_counter] = 2
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
             
