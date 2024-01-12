@@ -44,7 +44,7 @@ class BitgetDataUtil:
         self.crypto_remove = crypto_remove_list
         self.crypto_observe_list = crypto_observe_default_list
         self.client_bit = client_bit
-
+ 
         if load_from_previous_execution == True:
             self.data_frame_bkp = excel_util.load_dataframe()
         
@@ -53,7 +53,6 @@ class BitgetDataUtil:
             
             #Remove selected coins
             all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_remove)].index)
-            
 
             if len(self.crypto_observe_list) == 0:
                 #All coins
@@ -73,8 +72,7 @@ class BitgetDataUtil:
             """
             columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
                                 DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, DataFrameColum.TAKERFEERATE.value, 
-                                DataFrameColum.VOLUMEPLACE.value ]  # Índices de las columnas que deseas mantener (0-indexed)
-            
+                                DataFrameColum.VOLUMEPLACE.value, DataFrameColum.PRICEPLACE.value, DataFrameColum.PRICEENDSTEP.value,DataFrameColum.BUY_LIMIT_PRICE_RATIO.value,]  # Índices de las columnas que deseas mantener (0-indexed)
             
             self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
             

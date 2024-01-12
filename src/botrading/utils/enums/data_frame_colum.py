@@ -17,6 +17,10 @@ class DataFrameColum(Enum):
     MONEY_SPENT = "MONEY_SPENT" 
     SIZE = "SIZE" 
     LEVEREAGE = "LEVEREAGE"
+    PRICEPLACE = "pricePlace"
+    PRICEENDSTEP = "priceEndStep"
+    BUY_LIMIT_PRICE_RATIO = "buyLimitPriceRatio"
+
 
     BASE = "baseCoin"
     QUOTE = "quoteCoin"
