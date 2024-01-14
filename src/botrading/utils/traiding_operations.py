@@ -77,9 +77,15 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                     #continue
         
             if percentage_profit_flag:
-                takeProfit = float(takeProfit)
-                stopLoss = float(stopLoss)
                 
+                multiplier = float(f"{price_place:.{price_end_step}f}")
+                
+                takeProfit = float(takeProfit)
+                takeProfit = TradingUtil.multiple_closest(takeProfit, multiplier)
+                #print(takeProfit)
+                stopLoss = float(stopLoss)
+                stopLoss = TradingUtil.multiple_closest(stopLoss, multiplier)
+                #print(stopLoss)
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
@@ -286,4 +292,26 @@ class TradingUtil:
         size = (quantity_usdt / price_coin) * leverage
 
         return size, price_coin
+    
+    def multiple_closest(price, z):
+        """
+        Calcula el múltiplo más cercano de un valor X con un múltiplo Z.
+
+        Args:
+            x: El valor a calcular.
+            z: El múltiplo a calcular.
+
+        Returns:
+            El múltiplo más cercano de x con z.
+        """
+
+        # Calculamos la diferencia entre x y el múltiplo anterior de z.
+        difference = price - (price // z) * z
+
+        # Si la diferencia es menor que la mitad de z, entonces x es el múltiplo más cercano.
+        if difference < z / 2:
+            return price
+
+        # De lo contrario, el múltiplo más cercano es x - difference.
+        return price - difference
 
