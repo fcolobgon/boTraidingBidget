@@ -77,15 +77,37 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                     #continue
         
             if percentage_profit_flag:
+                print ('--------------------------------------------------------------')
+                print ('price_place: ' + str(price_place))
+                print ('price_end_step: ' + str(price_end_step))
+                print ('volume_place: ' + str(volume_place))
+                print ('--------------------------------------------------------------')
+
+                print ('symbol: ' + str(symbol))
+                print ('marginCoin: ' + str(margin_coin))
+                print ('size: ' + str(size))
+                print ('sideType: ' + str(sideType))
+                print ('takeProfit: ' + str(takeProfit))
+                print ('stopLoss: ' + str(stopLoss))
+
                 
                 multiplier = float(f"{price_place:.{price_end_step}f}")
                 
                 takeProfit = float(takeProfit)
-                takeProfit = TradingUtil.multiple_closest(takeProfit, multiplier)
+                takeProfit = TradingUtil.format_price(takeProfit, price_place, price_end_step)
                 #print(takeProfit)
                 stopLoss = float(stopLoss)
-                stopLoss = TradingUtil.multiple_closest(stopLoss, multiplier)
+                stopLoss = TradingUtil.format_price(stopLoss, price_place, price_end_step)
                 #print(stopLoss)
+
+                print ('symbol: ' + str(symbol))
+                print ('marginCoin: ' + str(margin_coin))
+                print ('size: ' + str(size))
+                print ('sideType: ' + str(sideType))
+                print ('takeProfit: ' + str(takeProfit))
+                print ('stopLoss: ' + str(stopLoss))
+
+
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
@@ -314,4 +336,31 @@ class TradingUtil:
 
         # De lo contrario, el múltiplo más cercano es x - difference.
         return price - difference
+
+    def format_price(price, priceplace, priceendstep):
+        """
+        Formatea un precio según la cantidad de decimales especificada por priceplace,
+        y sustituye la última posición decimal por priceendstep.
+
+        Args:
+        - price (float): Precio a formatear.
+        - priceplace (int): Cantidad de decimales para el precio (price).
+        - priceendstep (int): Nuevo valor para la última posición decimal.
+
+        Returns:
+        - formatted_price (float): Precio formateado.
+        """
+        # Formatear el precio según la cantidad de decimales proporcionada por priceplace
+        formatted_price = round(price, priceplace)
+
+        # Convertir el precio formateado a una cadena para manipular los dígitos
+        price_str = str(formatted_price)
+
+        # Sustituir la última posición decimal por priceendstep
+        price_str = price_str[:-1] + str(priceendstep)
+
+        # Convertir nuevamente la cadena a un número flotante
+        formatted_price = float(price_str)
+
+        return formatted_price
 
