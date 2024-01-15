@@ -104,6 +104,7 @@ class Strategy:
             step = df.loc[ind, self.step_counter]
             
             #if step == 0:
+            actual_price = df.loc[ind, DataFrameColum.PRICE_CLOSE.value]
                 
             ma_50 = df.loc[ind, self.ma_50_colum]
             ma_50_ascending = df.loc[ind, self.ma_50_ascending_colum]
@@ -114,7 +115,7 @@ class Strategy:
             ma_150 = df.loc[ind, self.ma_150_colum]
             ma_150_ascending = df.loc[ind, self.ma_150_ascending_colum]
             
-            if ma_50 > ma_100 and ma_100 > ma_150:
+            if ma_50 > ma_100 and ma_100 > ma_150 and actual_price > ma_50:
                 if step != 1:
                     df.loc[ind, self.step_counter] = 1
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
@@ -122,7 +123,7 @@ class Strategy:
                     self.print_data_frame(message=symbol + " -> PASO 0 FINALIZADO", data_frame=df)
                     return df
                 
-            if ma_50 < ma_100 and ma_100 < ma_150:
+            if ma_50 < ma_100 and ma_100 < ma_150 and actual_price < ma_50:
                 if step != 2:
                     df.loc[ind, self.step_counter] = 2
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
@@ -255,6 +256,12 @@ class Strategy:
                 sell_df = df.query(query)
                 if sell_df.empty == False:
                     TelegramNotify.notify_sell(settings=settings, dataframe=sell_df)
+                    sell_df[DataFrameColum.ORDER_ID.value] = "-"
+                    sell_df[self.step_counter] = 0
+                    sell_df[DataFrameColum.TAKE_PROFIT.value] = 0.0
+                    sell_df[DataFrameColum.STOP_LOSS.value] = 0.0
+                    sell_df[DataFrameColum.SIDE_TYPE.value] = "-"
+                    sell_df[DataFrameColum.STATE.value] = ColumStateValues.SELL.value
                     return sell_df
             
             self.print_data_frame(message="VENTA ", data_frame=df)
