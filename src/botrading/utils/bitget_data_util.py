@@ -201,11 +201,11 @@ class BitgetDataUtil:
                 data_frame.loc[ind, DataFrameColum.PRICE_HIGH.value] = self.get_last_element(element_list = high_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.PRICE_HIGH_ASCENDING.value] = self.verificar_ascendente(check_list = high_numpy)
                 data_frame.loc[ind, DataFrameColum.PRICE_OPEN.value] = self.get_last_element(element_list = open_numpy, previous_period = previous_period)
-                data_frame[DataFrameColum.PRICE_OPEN_ASCENDING.value][ind] = self.verificar_ascendente(check_list = open_numpy)
+                data_frame.loc[ind, DataFrameColum.PRICE_OPEN_ASCENDING.value] = self.verificar_ascendente(check_list = open_numpy)
                 data_frame.loc[ind, DataFrameColum.PRICE_CLOSE.value] = self.get_last_element(element_list = close_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.PRICE_PERCENTAGE_PREV.value] = data_frame.loc[ind, DataFrameColum.PRICE_PERCENTAGE.value]
                 data_frame.loc[ind, DataFrameColum.PRICE_PERCENTAGE.value] = (self.get_last_element(element_list = close_numpy, previous_period = previous_period) * 100.0 / self.get_last_element(element_list = open_numpy, previous_period = previous_period)) - 100
-                data_frame[DataFrameColum.PRICE_CLOSE_ASCENDING.value][ind] = self.verificar_ascendente(check_list = close_numpy)
+                data_frame.loc[ind, DataFrameColum.PRICE_CLOSE_ASCENDING.value] = self.verificar_ascendente(check_list = close_numpy)
                 #data_frame[DataFrameColum.PRICE_OPEN_TIME.value][ind] = prices_history['Open time']
                 #data_frame[DataFrameColum.PRICE_CLOSE_TIME.value][ind] = prices_history['Close time']
 

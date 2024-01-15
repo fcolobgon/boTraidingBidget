@@ -78,14 +78,13 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         
             if percentage_profit_flag:
                 
-                multiplier = float(f"{price_place:.{price_end_step}f}")
                 
                 takeProfit = float(takeProfit)
-                takeProfit = TradingUtil.multiple_closest(takeProfit, multiplier)
-                #print(takeProfit)
+                takeProfit = TradingUtil.multiple_closest(takeProfit, price_place, price_end_step)
+                print(takeProfit)
                 stopLoss = float(stopLoss)
-                stopLoss = TradingUtil.multiple_closest(stopLoss, multiplier)
-                #print(stopLoss)
+                stopLoss = TradingUtil.multiple_closest(stopLoss, price_place, price_end_step)
+                print(stopLoss)
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
@@ -293,25 +292,26 @@ class TradingUtil:
 
         return size, price_coin
     
-    def multiple_closest(price, z):
-        """
-        Calcula el múltiplo más cercano de un valor X con un múltiplo Z.
+    @staticmethod
+    def multiple_closest(price, price_place, price_end_step):
+        
+        # Redondear el precio a la cantidad especificada por price_place
+        rounded_price = round(price, price_place)
 
-        Args:
-            x: El valor a calcular.
-            z: El múltiplo a calcular.
+        # Calcular la cantidad de veces que price_end_step cabe en la parte decimal redondeada
+        multiples = rounded_price / price_end_step
 
-        Returns:
-            El múltiplo más cercano de x con z.
-        """
+        # Redondear hacia arriba y hacia abajo para obtener los dos números más cercanos
+        lower_multiple = int(multiples)
+        upper_multiple = lower_multiple + 1
 
-        # Calculamos la diferencia entre x y el múltiplo anterior de z.
-        difference = price - (price // z) * z
+        # Calcular las dos opciones más cercanas
+        lower_option = lower_multiple * price_end_step
+        upper_option = upper_multiple * price_end_step
 
-        # Si la diferencia es menor que la mitad de z, entonces x es el múltiplo más cercano.
-        if difference < z / 2:
-            return price
-
-        # De lo contrario, el múltiplo más cercano es x - difference.
-        return price - difference
+        # Determinar cuál de las dos opciones está más cerca del precio original
+        if abs(price - lower_option) < abs(price - upper_option):
+            return lower_option
+        else:
+            return upper_option
 
