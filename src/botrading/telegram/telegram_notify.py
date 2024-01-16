@@ -18,6 +18,24 @@ class TelegramNotify:
         except Exception as e:
                 print(str(e))
                 print("Error notificando por telegram.")
+                
+    @staticmethod
+    def notify_df(settings=None, dataframe:pandas.DataFrame=pandas.DataFrame() ,message=""):
+        
+        try:
+
+            for ind in dataframe.index:
+                if settings:
+                    coin = dataframe.loc[ind, DataFrameColum.BASE.value]
+                    url_message = message + str(coin) 
+                    apiURL = f'https://api.telegram.org/bot' + settings.TELEGRAM_BOT_TOKEN + '/sendMessage'
+                    requests.post(apiURL, json={'chat_id': settings.CHATID, 'text': url_message})
+                    if message.strip == False:
+                        requests.post(apiURL, json={'chat_id': settings.CHATID, 'text': message})
+                        
+        except Exception as e:
+                print(str(e))
+                print("Error notificando por telegram.")
     
     @staticmethod
     def notify_buy(settings=None, dataframe:pandas.DataFrame=pandas.DataFrame() ,message=""):

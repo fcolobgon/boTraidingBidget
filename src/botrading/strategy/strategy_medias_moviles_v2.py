@@ -113,7 +113,7 @@ class Strategy:
                     df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                     value_S4 =  TA.PIVOT(prices)['s4'].iloc[-1]
                     df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + self.percentage
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + (self.percentage / actual_price)
             
             if step == 4: #SHORT
                 
@@ -121,7 +121,7 @@ class Strategy:
                     df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                     value_R4 =  TA.PIVOT(prices)['r4'].iloc[-1]
                     df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price - self.percentage
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price - (self.percentage / actual_price)
         
         sell_df = self.return_for_buy(df=df)
         
