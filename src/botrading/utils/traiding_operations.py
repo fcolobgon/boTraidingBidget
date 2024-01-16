@@ -99,6 +99,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 #stopLoss = TradingUtil.multiple_closest(stopLoss, price_place, price_end_step)
                 #print(stopLoss)
 
+                takeProfit = float(takeProfit)
                 takeProfit = TradingUtil.format_price(takeProfit, price_place, price_end_step)
                 stopLoss = float(stopLoss)
                 stopLoss = TradingUtil.format_price(stopLoss, price_place, price_end_step)
