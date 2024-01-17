@@ -142,6 +142,20 @@ class PriceUtil:
             data_frame[DataFrameColum.TAKE_PROFIT.value] = on_fire 
                     
         return data_frame
+    
+    @staticmethod
+    def plus_percentage_price(price, percentage):
+        
+        percentage = percentage/100
+        qty = price * percentage
+        return price + qty
+    
+    @staticmethod
+    def minus_percentage_price(price, percentage):
+        
+        percentage = percentage/100
+        qty = price * percentage
+        return price - qty
 
     @staticmethod
     def calculate_valid_price(price, price_place, price_end_step, volume_place):    
