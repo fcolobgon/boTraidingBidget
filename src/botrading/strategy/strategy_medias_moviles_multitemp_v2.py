@@ -5,6 +5,7 @@ import pandas_ta
 
 from src.botrading.model.indocators import *
 from src.botrading.utils.bitget_data_util import BitgetDataUtil
+from src.botrading.utils.price_util import PriceUtil
 from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
@@ -21,19 +22,15 @@ class Strategy:
     first_iteration = True
     step_counter = "STEP_COUNTER"
     time_range_colum = "TIME_RANGE"
-    percentage = 0.5
-    startTime:datetime
-    
     
     def __init__(self, name:str):
         
         self.name = name
         self.step_counter = "STEP_COUNTER"
         self.time_range_colum = "TIME_RANGE"
-        self.percentage = 0.5
         
     def get_time_ranges(self) -> []:
-        return ["MINUTES_5", "MINUTES_15", "HOUR_1"]
+        return ["MINUTES_5", "MINUTES_15","MINUTES_30", "HOUR_1"]
 
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
@@ -56,11 +53,13 @@ class Strategy:
                 time = df.loc[ind, self.time_range_colum]
                 
                 if "MINUTES_5" == time:
-                    p = 0.5
+                    p = 0.8
                 if "MINUTES_15" == time:
-                    p = 1
-                if "HOUR_1" == time:
                     p = 1.5
+                if "MINUTES_30" == time:
+                    p = 1.5
+                if "HOUR_1" == time:
+                    p = 2
                 
                 df.loc[ind, DataFrameColum.NOTE.value] = p
             
@@ -105,13 +104,15 @@ class Strategy:
                 length=150
                 ma_150 = pandas_ta.ma(type, close, length = length).iloc[-1]
                 
-                if ma_50 > ma_100 and ma_100 > ma_150 and actual_price > ma_50:
-                    df.loc[ind, self.step_counter] = 1
-                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                if ma_50 > ma_100 and ma_100 > ma_150:
+                    if  actual_price > ma_50:
+                        df.loc[ind, self.step_counter] = 1
+                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
                     
-                elif ma_50 < ma_100 and ma_100 < ma_150 and actual_price < ma_50:
-                    df.loc[ind, self.step_counter] = 2
-                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                elif ma_50 < ma_100 and ma_100 < ma_150:
+                    if actual_price < ma_50:
+                        df.loc[ind, self.step_counter] = 2
+                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
                 else:
                     df.loc[ind, self.step_counter] = 0
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
@@ -122,8 +123,6 @@ class Strategy:
                     if actual_price > ma_100 and actual_price < ma_50:
                         if prev_price < ma_50 and prev_open_price < ma_50:
                             df.loc[ind, self.step_counter] = 3
-                    else:
-                        df.loc[ind, self.step_counter] = 1
                 
                 if step == 2: #SHORT
                     
@@ -131,8 +130,6 @@ class Strategy:
                     if actual_price < ma_100 and actual_price > ma_50:
                         if prev_price > ma_50 and prev_open_price > ma_50:
                             df.loc[ind, self.step_counter] = 4
-                    else:
-                        df.loc[ind, self.step_counter] = 2
                     
                 if step == 3: #LONG 
                     
@@ -141,7 +138,7 @@ class Strategy:
                         df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                         value_S4 =  TA.PIVOT(prices)['s4'].iloc[-1]
                         df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
-                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + (p / actual_price)
+                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = PriceUtil.plus_percentage_price(actual_price, p)
                 
                 if step == 4: #SHORT
                     
@@ -150,7 +147,7 @@ class Strategy:
                         df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                         value_R4 =  TA.PIVOT(prices)['r4'].iloc[-1]
                         df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
-                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  actual_price - (p / actual_price)
+                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  PriceUtil.minus_percentage_price(actual_price, p)
         
         sell_df = self.return_for_buy(df=df)
         

@@ -78,13 +78,15 @@ class Strategy:
             length=150
             ma_150 = pandas_ta.ma(type, close, length = length).iloc[-1]
             
-            if ma_50 > ma_100 and ma_100 > ma_150 and actual_price > ma_50:
-                df.loc[ind, self.step_counter] = 1
-                df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                
-            elif ma_50 < ma_100 and ma_100 < ma_150 and actual_price < ma_50:
-                df.loc[ind, self.step_counter] = 2
-                df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+            if ma_50 > ma_100 and ma_100 > ma_150:
+                if  actual_price > ma_50:
+                    df.loc[ind, self.step_counter] = 1
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                    
+            elif ma_50 < ma_100 and ma_100 < ma_150:
+                if actual_price < ma_50:
+                    df.loc[ind, self.step_counter] = 2
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
             else:
                 df.loc[ind, self.step_counter] = 0
                 df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
@@ -95,8 +97,6 @@ class Strategy:
                 if actual_price > ma_100 and actual_price < ma_50:
                     if prev_price < ma_50 and prev_open_price < ma_50:
                         df.loc[ind, self.step_counter] = 3
-                else:
-                    df.loc[ind, self.step_counter] = 1
             
             if step == 2: #SHORT
                 
@@ -104,8 +104,6 @@ class Strategy:
                 if actual_price < ma_100 and actual_price > ma_50:
                     if prev_price > ma_50 and prev_open_price > ma_50:
                         df.loc[ind, self.step_counter] = 4
-                else:
-                    df.loc[ind, self.step_counter] = 2
                 
             if step == 3: #LONG 
                 
