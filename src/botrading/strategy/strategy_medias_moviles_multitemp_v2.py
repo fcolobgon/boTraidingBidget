@@ -22,12 +22,16 @@ class Strategy:
     first_iteration = True
     step_counter = "STEP_COUNTER"
     time_range_colum = "TIME_RANGE"
+    startTime:datetime
     
     def __init__(self, name:str):
         
         self.name = name
         self.step_counter = "STEP_COUNTER"
         self.time_range_colum = "TIME_RANGE"
+        self.startTime = datetime.now()
+        self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+        
         
     def get_time_ranges(self) -> []:
         return ["MINUTES_5", "MINUTES_15","MINUTES_30", "HOUR_1"]
@@ -41,6 +45,11 @@ class Strategy:
         
         if self.first_iteration:
             
+            from_prev = settings.LOAD_FROM_PREVIOUS_EXECUTION
+            
+            if from_prev:
+                return df
+            
             df = DataFrameCheckUtil.add_columns_to_dataframe(
                 column_names=[self.step_counter,
                               self.time_range_colum], df=df)
@@ -53,13 +62,13 @@ class Strategy:
                 time = df.loc[ind, self.time_range_colum]
                 
                 if "MINUTES_5" == time:
-                    p = 0.8
+                    p = 0.6
                 if "MINUTES_15" == time:
-                    p = 1.5
+                    p = 1.2
                 if "MINUTES_30" == time:
-                    p = 1.5
-                if "HOUR_1" == time:
                     p = 2
+                if "HOUR_1" == time:
+                    p = 2.5
                 
                 df.loc[ind, DataFrameColum.NOTE.value] = p
             
@@ -104,13 +113,15 @@ class Strategy:
                 length=150
                 ma_150 = pandas_ta.ma(type, close, length = length).iloc[-1]
                 
+                #LONG
                 if ma_50 > ma_100 and ma_100 > ma_150:
-                    if  actual_price > ma_50:
+                    if  actual_price > ma_50 and step != 3:
                         df.loc[ind, self.step_counter] = 1
                         df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                    
+                 
+                #SHORT   
                 elif ma_50 < ma_100 and ma_100 < ma_150:
-                    if actual_price < ma_50:
+                    if actual_price < ma_50 and step != 4:
                         df.loc[ind, self.step_counter] = 2
                         df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
                 else:
