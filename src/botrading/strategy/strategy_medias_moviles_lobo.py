@@ -29,7 +29,8 @@ class Strategy:
         
         self.name = name
         self.step_counter = "STEP_COUNTER"
-        self.percentage = 0.5
+        self.profit = 0.5
+        self.leverage = 10
         self.startTime = datetime.now()
         self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
         
@@ -75,59 +76,68 @@ class Strategy:
              
             type="sma"
             length=50
-            ma_50 = pandas_ta.ma(type, close, length = length).iloc[-1]
+            ma_50 = pandas_ta.ma(type, close, length = length)
+            ma_50_prev = ma_50.iloc[-2]
+            ma_50 = ma_50.iloc[-1]
             length=100
-            ma_100 = pandas_ta.ma(type, close, length = length).iloc[-1]
+            ma_100 = pandas_ta.ma(type, close, length = length)
+            #ma_100_prev = ma_100.iloc[-2]
+            ma_100 = ma_100.iloc[-1]
             length=150
-            ma_150 = pandas_ta.ma(type, close, length = length).iloc[-1]
-            
+            ma_150 = pandas_ta.ma(type, close, length = length)
+            #ma_150_prev = ma_150.iloc[-2]
+            ma_150 = ma_150.iloc[-1]
+                        
             #LONG
             if ma_50 > ma_100 and ma_100 > ma_150:
                 if  actual_price > ma_50 and step != 3:
+                    soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
+                    soporte =  soportes_resistencias['s4']
+                    resistencia =  soportes_resistencias['r4']
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  resistencia
+                    df.loc[ind, DataFrameColum.STOP_LOSS.value] =  soporte
                     df.loc[ind, self.step_counter] = 1
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
                  
             #SHORT   
             elif ma_50 < ma_100 and ma_100 < ma_150:
                 if actual_price < ma_50 and step != 4:
+                    soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
+                    soporte =  soportes_resistencias['s4']
+                    resistencia =  soportes_resistencias['r4']
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  soporte
+                    df.loc[ind, DataFrameColum.STOP_LOSS.value] =  resistencia
                     df.loc[ind, self.step_counter] = 2
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                    
             else:
-                df.loc[ind, self.step_counter] = 0
-                df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
+                if ma_50 > ma_150 and (step == 1 or step == 3):
+                    print("Continua en LONG")
+                elif ma_50 < ma_150 and (step == 2 or step == 4):
+                    print("Continua en SHORT")
+                else:
+                    df.loc[ind, self.step_counter] = 0
+                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
                 
             if step == 1: #LONG
                     
-                #Tipo long
                 if actual_price > ma_100 and actual_price < ma_50:
-                    if prev_price < ma_50 and prev_open_price < ma_50:
-                        df.loc[ind, self.step_counter] = 3
+                    df.loc[ind, self.step_counter] = 3
                 
             if step == 2: #SHORT
                     
-                #Tipo long
                 if actual_price < ma_100 and actual_price > ma_50:
-                    if prev_price > ma_50 and prev_open_price > ma_50:
-                        df.loc[ind, self.step_counter] = 4
+                    df.loc[ind, self.step_counter] = 4
                     
             if step == 3: #LONG 
                     
-                if prev_price > ma_50:
-                    p = df.loc[ind, DataFrameColum.NOTE.value]
+                if prev_price < ma_50_prev and actual_price > ma_50:
                     df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-                    value_S4 =  TA.PIVOT(prices)['s4'].iloc[-1]
-                    df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = PriceUtil.plus_percentage_price(actual_price, p)
-                
+
             if step == 4: #SHORT
                     
-                if prev_price < ma_50:
-                    p = df.loc[ind, DataFrameColum.NOTE.value]
-                    df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-                    value_R4 =  TA.PIVOT(prices)['r4'].iloc[-1]
-                    df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  PriceUtil.minus_percentage_price(actual_price, p)
-        
+                if prev_price > ma_50_prev and actual_price < ma_50:
+                    df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value        
         
         sell_df = self.return_for_buy(df=df)
         
@@ -145,11 +155,13 @@ class Strategy:
         df = df.query(state_query)
         
         df[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
-        df[DataFrameColum.LEVEREAGE.value] = 5
+        df[DataFrameColum.LEVEREAGE.value] = self.leverage
         df[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
         df[self.step_counter] = 5
         
-        TelegramNotify.notify_df(settings=settings, dataframe=df, message="Nueva compra ")
+        TelegramNotify.notify_df(settings=settings, dataframe=df, message="Nueva compra ", colums=[DataFrameColum.SIDE_TYPE.value, 
+                                                                                                   DataFrameColum.TAKE_PROFIT.value,
+                                                                                                   DataFrameColum.STOP_LOSS.value])
         self.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
         return df
     
@@ -171,7 +183,10 @@ class Strategy:
                 query = DataFrameColum.ORDER_OPEN.value + " == False"      
                 sell_df = df.query(query)
                 if sell_df.empty == False:
-                    TelegramNotify.notify_df(settings=settings, dataframe=sell_df, message="Nueva venta ")
+                    TelegramNotify.notify_df(settings=settings, dataframe=sell_df, message="Nueva venta ", colums=[DataFrameColum.SIDE_TYPE.value, 
+                                                                                                   DataFrameColum.TAKE_PROFIT.value,
+                                                                                                   DataFrameColum.STOP_LOSS.value,
+                                                                                                   DataFrameColum.PERCENTAGE_PROFIT.value])
                     sell_df[DataFrameColum.ORDER_ID.value] = "-"
                     sell_df[self.step_counter] = 0
                     sell_df[DataFrameColum.TAKE_PROFIT.value] = 0.0
@@ -196,6 +211,5 @@ class Strategy:
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            
-                self.step_counter,
-                DataFrameColum.ID_DF.value
+                self.step_counter
                 ]])
