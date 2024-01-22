@@ -84,9 +84,14 @@ class BitgetBuyThreed(threading.Thread):
         if self.buy_thread_readry:
             self.lock_buy_thread()
 
+            # Verificar columnas diferentes
+            columnas_nuevas = set(update_data_frame.columns) - set(self.data_frame.columns)
+
+            # Añadir columnas nuevas al DataFrame master basándonos en el índice
+            self.data_frame = pandas.concat([self.data_frame, update_data_frame[columnas_nuevas]], axis=1)
+
             #Sustituye las lineas Slave con Master
-            #self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
-            self.data_frame = update_data_frame
+            self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
             
             excel_util.save_data_frame(data_frame=self.data_frame, exel_name=self.data_frame_name)
 
@@ -95,7 +100,8 @@ class BitgetBuyThreed(threading.Thread):
         else:
             self.wait_buy_thread_ready()
             #Sustituye las lineas Slave con Master
-            self.merge_dataframes(update_data_frame=update_data_frame)
+            self.data_frame = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = self.data_frame, df_slave = update_data_frame)
+           
             return self.data_frame
 
     def wait_buy_thread_ready(self):

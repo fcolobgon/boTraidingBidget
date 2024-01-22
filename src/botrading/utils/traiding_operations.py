@@ -44,7 +44,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
     for ind in df_buy.index:
         symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]        
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
-        levereage = str(df_buy.loc[ind,DataFrameColum.LEVEREAGE.value])
+        levereage = int(df_buy.loc[ind,DataFrameColum.LEVEREAGE.value])
         percentage_profit_flag = df_buy.loc[ind,DataFrameColum.PERCENTAGE_PROFIT_FLAG.value]
         takeProfit = str(df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value])
         stopLoss = str(df_buy.loc[ind,DataFrameColum.STOP_LOSS.value])
@@ -82,7 +82,8 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 print ('price_end_step: ' + str(price_end_step))
                 print ('volume_place: ' + str(volume_place))
                 print ('--------------------------------------------------------------')
-
+                            
+                print ('price_coin_buy: ' + str(price_coin_buy))
                 print ('symbol: ' + str(symbol))
                 print ('marginCoin: ' + str(margin_coin))
                 print ('size: ' + str(size))

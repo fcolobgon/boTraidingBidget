@@ -370,7 +370,7 @@ class BitgetDataUtil:
                 ma_numpy = numpy.array(ma)
                 ma_numpy = ma_numpy[~numpy.isnan(ma_numpy)]
                                 
-                #data_frame[DataFrameColum.MA.value][ind] = ma_numpy
+                data_frame[DataFrameColum.MA.value][ind] = ma_numpy
                 data_frame.loc[ind, DataFrameColum.MA_ASCENDING.value] = self.list_is_ascending(check_list = ma_numpy, ascending_count = ascending_count, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.MA_LAST.value] = self.get_last_element(element_list = ma_numpy, previous_period = previous_period)
                 #data_frame.loc[ind, DataFrameColum.MA_LAST_ANGLE.value] = MathCal_util.angle(values=ma_numpy, time_range=time_range)
