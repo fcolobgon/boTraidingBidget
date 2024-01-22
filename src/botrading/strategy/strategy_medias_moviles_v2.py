@@ -7,6 +7,7 @@ from src.botrading.model.indocators import *
 from src.botrading.utils.bitget_data_util import BitgetDataUtil
 from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
+from src.botrading.utils.price_util import PriceUtil
 from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
@@ -29,6 +30,8 @@ class Strategy:
         self.name = name
         self.step_counter = "STEP_COUNTER"
         self.percentage = 0.5
+        self.startTime = datetime.now()
+        self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
         
     def get_time_range(self) -> TimeRanges:
         return TimeRanges("MINUTES_5")
@@ -78,48 +81,53 @@ class Strategy:
             length=150
             ma_150 = pandas_ta.ma(type, close, length = length).iloc[-1]
             
+            #LONG
             if ma_50 > ma_100 and ma_100 > ma_150:
-                if  actual_price > ma_50:
+                if  actual_price > ma_50 and step != 3:
                     df.loc[ind, self.step_counter] = 1
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                    
+                 
+            #SHORT   
             elif ma_50 < ma_100 and ma_100 < ma_150:
-                if actual_price < ma_50:
+                if actual_price < ma_50 and step != 4:
                     df.loc[ind, self.step_counter] = 2
                     df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
             else:
                 df.loc[ind, self.step_counter] = 0
                 df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
-            
-            if step == 1: #LONG
                 
+            if step == 1: #LONG
+                    
                 #Tipo long
                 if actual_price > ma_100 and actual_price < ma_50:
                     if prev_price < ma_50 and prev_open_price < ma_50:
                         df.loc[ind, self.step_counter] = 3
-            
-            if step == 2: #SHORT
                 
+            if step == 2: #SHORT
+                    
                 #Tipo long
                 if actual_price < ma_100 and actual_price > ma_50:
                     if prev_price > ma_50 and prev_open_price > ma_50:
                         df.loc[ind, self.step_counter] = 4
-                
+                    
             if step == 3: #LONG 
-                
+                    
                 if prev_price > ma_50:
+                    p = df.loc[ind, DataFrameColum.NOTE.value]
                     df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                     value_S4 =  TA.PIVOT(prices)['s4'].iloc[-1]
                     df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_S4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price + (self.percentage / actual_price)
-            
-            if step == 4: #SHORT
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = PriceUtil.plus_percentage_price(actual_price, p)
                 
+            if step == 4: #SHORT
+                    
                 if prev_price < ma_50:
+                    p = df.loc[ind, DataFrameColum.NOTE.value]
                     df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                     value_R4 =  TA.PIVOT(prices)['r4'].iloc[-1]
                     df.loc[ind, DataFrameColum.STOP_LOSS.value] =  value_R4
-                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] = actual_price - (self.percentage / actual_price)
+                    df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  PriceUtil.minus_percentage_price(actual_price, p)
+        
         
         sell_df = self.return_for_buy(df=df)
         
@@ -141,7 +149,7 @@ class Strategy:
         df[DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
         df[self.step_counter] = 5
         
-        TelegramNotify.notify_buy(settings=settings, dataframe=df)
+        TelegramNotify.notify_df(settings=settings, dataframe=df, message="Nueva compra ")
         self.print_data_frame(message="EJECUTAR COMPRA", data_frame=df)
         return df
     
@@ -163,7 +171,7 @@ class Strategy:
                 query = DataFrameColum.ORDER_OPEN.value + " == False"      
                 sell_df = df.query(query)
                 if sell_df.empty == False:
-                    TelegramNotify.notify_sell(settings=settings, dataframe=sell_df)
+                    TelegramNotify.notify_df(settings=settings, dataframe=sell_df, message="Nueva venta ")
                     sell_df[DataFrameColum.ORDER_ID.value] = "-"
                     sell_df[self.step_counter] = 0
                     sell_df[DataFrameColum.TAKE_PROFIT.value] = 0.0
@@ -188,5 +196,6 @@ class Strategy:
                 DataFrameColum.TAKE_PROFIT.value,
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,            
-                self.step_counter
+                self.step_counter,
+                DataFrameColum.ID_DF.value
                 ]])
