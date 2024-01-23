@@ -21,6 +21,7 @@ class Strategy:
     name:str
     first_iteration = True
     step_counter = "STEP_COUNTER"
+    time_range_colum = "TIME_RANGE"
     percentage = 0.5
     startTime:datetime
     
@@ -29,14 +30,15 @@ class Strategy:
         
         self.name = name
         self.step_counter = "STEP_COUNTER"
+        self.time_range_colum = "TIME_RANGE"
         self.profit = 0.5
         self.leverage = 10
         self.startTime = datetime.now()
         self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
         
-    def get_time_range(self) -> TimeRanges:
-        return TimeRanges("MINUTES_5")
-        #return TimeRanges("MINUTES_15")
+    def get_time_ranges(self) -> []:
+        return ["MINUTES_5", "MINUTES_15", "HOUR_1"]
+        #return ["MINUTES_5"]
 
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
@@ -48,7 +50,12 @@ class Strategy:
         if self.first_iteration:
             
             df = DataFrameCheckUtil.add_columns_to_dataframe(
-                column_names=[self.step_counter], df=df)
+                column_names=[self.step_counter,
+                              self.time_range_colum], df=df)
+            
+            nuevos_valores_tipo = self.get_time_ranges()
+            df = pandas.concat([df.assign(TIME_RANGE=time_range) for time_range in nuevos_valores_tipo], ignore_index=True)
+            
             
             df[self.step_counter] = 0
             self.first_iteration = False
@@ -58,95 +65,100 @@ class Strategy:
         #return self.return_for_buy_test(bitget_data_util=bitget_data_util, df=df)
         
         self.print_data_frame(message="INICIO COMPRA", data_frame=df)
-        time_range = self.get_time_range()
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
-
-        for ind in df.index:
-
-            symbol = df.loc[ind, DataFrameColum.SYMBOL.value]
-            step = df.loc[ind, self.step_counter]
-            
-            prices = prices_history[symbol]
-            
-            close = prices['Close']
-            open = prices['Open']
-            actual_price = close.iloc[-1]
-            prev_price = close.iloc[-2]
-            prev_open_price = open.iloc[-2]
-             
-            type="sma"
-            length=50
-            ma_50 = pandas_ta.ma(type, close, length = length)
-            ma_50_prev = ma_50.iloc[-2]
-            ma_50 = ma_50.iloc[-1]
-            length=100
-            ma_100 = pandas_ta.ma(type, close, length = length)
-            #ma_100_prev = ma_100.iloc[-2]
-            ma_100 = ma_100.iloc[-1]
-            length=150
-            ma_150 = pandas_ta.ma(type, close, length = length)
-            #ma_150_prev = ma_150.iloc[-2]
-            ma_150 = ma_150.iloc[-1]
-                        
-            #LONG
-            if ma_50 > ma_100 and ma_100 > ma_150:
-                if  actual_price > ma_50 and step != 3:
-                    
-                    df.loc[ind, self.step_counter] = 1
-                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                 
-            #SHORT   
-            elif ma_50 < ma_100 and ma_100 < ma_150:
-                if actual_price < ma_50 and step != 4:
-                    
-                    df.loc[ind, self.step_counter] = 2
-                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-                    
-            else:
-                if ma_50 > ma_150 and (step == 1 or step == 3):
-                    print("Continua en LONG")
-                elif ma_50 < ma_150 and (step == 2 or step == 4):
-                    print("Continua en SHORT")
-                else:
-                    df.loc[ind, self.step_counter] = 0
-                    df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
-                
-            if step == 1: #LONG
-                    
-                if actual_price > ma_100 and actual_price < ma_50:
-                    soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
-                    soporte =  soportes_resistencias['s3']
-                    resistencia =  soportes_resistencias['r3']
-                    amplitud = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
-                    if amplitud > 1:
-                        df.loc[ind, DataFrameColum.NOTE.value] = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
-                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  resistencia
-                        df.loc[ind, DataFrameColum.STOP_LOSS.value] =  soporte
-                        df.loc[ind, self.step_counter] = 3
-                
-            if step == 2: #SHORT
-                    
-                if actual_price < ma_100 and actual_price > ma_50:
-                    soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
-                    soporte =  soportes_resistencias['s3']
-                    resistencia =  soportes_resistencias['r3']
-                    amplitud = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
-                    if amplitud > 1:
-                        df.loc[ind, DataFrameColum.NOTE.value] = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
-                        df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  soporte
-                        df.loc[ind, DataFrameColum.STOP_LOSS.value] =  resistencia
-                        df.loc[ind, self.step_counter] = 4
-                    
-            if step == 3: #LONG 
-                    
-                if prev_price < ma_50_prev and actual_price > ma_50:
-                    df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-            if step == 4: #SHORT
-                    
-                if prev_price > ma_50_prev and actual_price < ma_50:
-                    df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value        
         
+        time_ranges = self.get_time_ranges()
+        
+        for t in time_ranges:
+            
+            time_range = TimeRanges.get_time_range_by_name(t)
+            prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = df, time_range = time_range)
+
+            for ind in df.index:
+
+                symbol = df.loc[ind, DataFrameColum.SYMBOL.value]
+                step = df.loc[ind, self.step_counter]
+                
+                prices = prices_history[symbol]
+                
+                close = prices['Close']
+                open = prices['Open']
+                actual_price = close.iloc[-1]
+                prev_price = close.iloc[-2]
+                prev_open_price = open.iloc[-2]
+                
+                type="sma"
+                length=50
+                ma_50 = pandas_ta.ma(type, close, length = length)
+                ma_50_prev = ma_50.iloc[-2]
+                ma_50 = ma_50.iloc[-1]
+                length=100
+                ma_100 = pandas_ta.ma(type, close, length = length)
+                #ma_100_prev = ma_100.iloc[-2]
+                ma_100 = ma_100.iloc[-1]
+                length=150
+                ma_150 = pandas_ta.ma(type, close, length = length)
+                #ma_150_prev = ma_150.iloc[-2]
+                ma_150 = ma_150.iloc[-1]
+                            
+                #LONG
+                if ma_50 > ma_100 and ma_100 > ma_150:
+                    if  actual_price > ma_50 and step != 3:
+                        
+                        df.loc[ind, self.step_counter] = 1
+                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                    
+                #SHORT   
+                elif ma_50 < ma_100 and ma_100 < ma_150:
+                    if actual_price < ma_50 and step != 4:
+                        
+                        df.loc[ind, self.step_counter] = 2
+                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                        
+                else:
+                    if ma_50 > ma_150 and (step == 1 or step == 3):
+                        print("Continua en LONG")
+                    elif ma_50 < ma_150 and (step == 2 or step == 4):
+                        print("Continua en SHORT")
+                    else:
+                        df.loc[ind, self.step_counter] = 0
+                        df.loc[ind, DataFrameColum.SIDE_TYPE.value] = "-"
+                    
+                if step == 1: #LONG
+                        
+                    if actual_price > ma_100 and actual_price < ma_50:
+                        soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
+                        soporte =  soportes_resistencias['s3']
+                        resistencia =  soportes_resistencias['r3']
+                        amplitud = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
+                        if amplitud > 1:
+                            df.loc[ind, DataFrameColum.NOTE.value] = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
+                            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  resistencia
+                            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  soporte
+                            df.loc[ind, self.step_counter] = 3
+                    
+                if step == 2: #SHORT
+                        
+                    if actual_price < ma_100 and actual_price > ma_50:
+                        soportes_resistencias =  TA.PIVOT(prices).iloc[-1]
+                        soporte =  soportes_resistencias['s3']
+                        resistencia =  soportes_resistencias['r3']
+                        amplitud = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
+                        if amplitud > 1:
+                            df.loc[ind, DataFrameColum.NOTE.value] = PriceUtil.porcentaje_valores_absolutos(soporte, resistencia)
+                            df.loc[ind, DataFrameColum.TAKE_PROFIT.value] =  soporte
+                            df.loc[ind, DataFrameColum.STOP_LOSS.value] =  resistencia
+                            df.loc[ind, self.step_counter] = 4
+                        
+                if step == 3: #LONG 
+                        
+                    if prev_price < ma_50_prev and actual_price > ma_50:
+                        df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+
+                if step == 4: #SHORT
+                        
+                    if prev_price > ma_50_prev and actual_price < ma_50:
+                        df.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value        
+            
         sell_df = self.return_for_buy(df=df)
         
         if sell_df.empty:
@@ -221,5 +233,6 @@ class Strategy:
                 DataFrameColum.STOP_LOSS.value,
                 DataFrameColum.SIDE_TYPE.value,
                 DataFrameColum.NOTE.value,            
-                self.step_counter
+                self.step_counter,
+                self.time_range_colum
                 ]])
