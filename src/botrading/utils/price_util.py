@@ -33,3 +33,37 @@ class PriceUtil:
             adjusted_btc_amount = round(price, volume_place)
 
             return adjusted_btc_amount
+
+    def create_multiple (price_place, price_end_step:int = 0):
+
+        try:
+            # Verificar que pricePlace sea un entero positivo
+            if isinstance(price_place, int) and price_place > 0:
+                return price_end_step / (10 ** price_place)  # Ejemplo: 0.001 para price_place=3
+
+            else:
+                return None  # En caso de que pricePlace no sea válido
+
+        except ZeroDivisionError:
+            # Manejar el caso en que el divisor sea cero
+            return None
+        
+
+    def calculate_proximate_multiple (value, price_place, price_end_step):
+        """
+        Calcula el próximo múltiplo a partir de un valor dado y un multiplicador.
+
+        :param valor: Valor base.
+        :param multiplicador: Múltiplo a utilizar.
+        :return: Próximo múltiplo.
+        """
+        try:
+            multiplicator = PriceUtil.create_multiple (price_place, price_end_step)
+            # Calcular el próximo múltiplo
+            proximo_multiplo = (value / multiplicator) * multiplicator
+
+            return proximo_multiplo
+
+        except ZeroDivisionError:
+            # Manejar el caso en que el multiplicador sea cero
+            return value
