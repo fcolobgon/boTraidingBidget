@@ -46,16 +46,16 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
         levereage = int(df_buy.loc[ind,DataFrameColum.LEVEREAGE.value])
         percentage_profit_flag = df_buy.loc[ind,DataFrameColum.PERCENTAGE_PROFIT_FLAG.value]
-        takeProfit = str(df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value])
-        stopLoss = str(df_buy.loc[ind,DataFrameColum.STOP_LOSS.value])
+        takeProfit = df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value]
+        stopLoss = df_buy.loc[ind,DataFrameColum.STOP_LOSS.value]
         margin_coin = settings.MARGINCOIN
         price_place = int(df_buy.loc[ind,DataFrameColum.PRICEPLACE.value])
         price_end_step = int(df_buy.loc[ind,DataFrameColum.PRICEENDSTEP.value])
         volume_place = int(df_buy.loc[ind,DataFrameColum.VOLUMEPLACE.value])
 
         try:
-            size, price_coin_buy = TradingUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, leverage = int(levereage))
-
+            size, price_coin_buy = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
+            formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
             #Solo se ejecuta en para modo TEST
             if settings.BITGET_CLIENT_TEST_MODE == True:
                 margin_coin = 'S' + settings.MARGINCOIN
@@ -86,43 +86,31 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 print ('price_coin_buy: ' + str(price_coin_buy))
                 print ('symbol: ' + str(symbol))
                 print ('marginCoin: ' + str(margin_coin))
-                print ('size: ' + str(size))
+                print ('size: ' + str(formatted_price))
                 print ('sideType: ' + str(sideType))
                 print ('takeProfit: ' + str(takeProfit))
                 print ('stopLoss: ' + str(stopLoss))
 
-                
-                
-                #takeProfit = float(takeProfit)
-                #takeProfit = TradingUtil.multiple_closest(takeProfit, price_place, price_end_step)
-                #print(takeProfit)
-                #stopLoss = float(stopLoss)
-                #stopLoss = TradingUtil.multiple_closest(stopLoss, price_place, price_end_step)
-                #print(stopLoss)
-
-                takeProfit = float(takeProfit)
-                takeProfit = TradingUtil.format_price(takeProfit, price_place, price_end_step)
-                stopLoss = float(stopLoss)
-                stopLoss = TradingUtil.format_price(stopLoss, price_place, price_end_step)
+                takeProfit = PriceUtil.multiple_next_limit (takeProfit, price_place, price_end_step)
+                stopLoss = PriceUtil.multiple_next_limit (stopLoss, price_place, price_end_step)
 
                 print ('symbol: ' + str(symbol))
                 print ('marginCoin: ' + str(margin_coin))
-                print ('size: ' + str(size))
+                print ('size: ' + str(formatted_price))
                 print ('sideType: ' + str(sideType))
                 print ('takeProfit: ' + str(takeProfit))
                 print ('stopLoss: ' + str(stopLoss))
 
-
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
             else:
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = size, side = 'open_' + sideType, orderType = 'market') 
+                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market') 
                 
             if order['msg'] == 'success':
                 print(order)
                 orderInfo = order['data']
                 df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
                 df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   
-                df_buy.loc[ind,DataFrameColum.SIZE.value] = price_coin_buy
+                df_buy.loc[ind,DataFrameColum.PRICE_BUY.value] = price_coin_buy
                 df_buy.loc[ind,DataFrameColum.ORDER_OPEN.value] = True
                 df_buy.loc[ind,DataFrameColum.ORDER_ID.value] = orderInfo['orderId']
                 df_buy.loc[ind,DataFrameColum.CLIENT_ORDER_ID.value] = orderInfo['clientOid'] #! clientOrderId
@@ -132,8 +120,10 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
 
         except Exception as e:
             print(f"Error al realizar la orden de compra para {symbol}: {e}")
-            df_buy[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_BUY.value
-            df_buy[DataFrameColum.DATE.value][ind] = datetime.now()
+            df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.ERR_BUY.value
+            df_buy.loc[ind,DataFrameColum.ERROR.value] = e
+            df_buy.loc[ind,DataFrameColum.PRICE_BUY.value] = price_coin_buy
+            df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
 
             print(f"------------------- ERROR AL COMPRAR {symbol} -------------------")
             continue  # Continuar con la próxima iteración del bucle sin detenerse
@@ -312,14 +302,6 @@ class TradingUtil:
         # Realizar la conversión de USDT a la moneda específica
         return float(qtty_coin_buy) * float(price_coin), price_coin
 
-    @staticmethod
-    def calculate_size_with_leverage(clnt_bit: BitgetClienManager, symbol, quantity_usdt, leverage):
-
-        price_coin = float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
-        size = (quantity_usdt / price_coin) * leverage
-
-        return size, price_coin
-    
     @staticmethod
     def multiple_closest(price, price_place, price_end_step):
         

@@ -20,7 +20,12 @@ class DataFrameColum(Enum):
     PRICEPLACE = "pricePlace"
     PRICEENDSTEP = "priceEndStep"
     BUY_LIMIT_PRICE_RATIO = "buyLimitPriceRatio"
+    MIN_TRADE_NUM = "minTradeNum"
+    SIZE_MULTIPLIER = "sizeMultiplier"
 
+    ERROR = "ERROR"
+    FEE_BUY = "FEE_BUY"
+    FEE_SELL = "FEE_SELL"
 
     BASE = "baseCoin"
     QUOTE = "quoteCoin"

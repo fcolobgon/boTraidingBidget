@@ -72,7 +72,8 @@ class BitgetDataUtil:
             """
             columnas_a_mantener = [DataFrameColum.BASE.value, DataFrameColum.QUOTE.value, 
                                 DataFrameColum.SYMBOL.value, DataFrameColum.SYMBOLNAME.value, DataFrameColum.SYMBOLTYPE.value, DataFrameColum.TAKERFEERATE.value, 
-                                DataFrameColum.VOLUMEPLACE.value, DataFrameColum.PRICEPLACE.value, DataFrameColum.PRICEENDSTEP.value,DataFrameColum.BUY_LIMIT_PRICE_RATIO.value,]  # Índices de las columnas que deseas mantener (0-indexed)
+                                DataFrameColum.VOLUMEPLACE.value, DataFrameColum.PRICEPLACE.value, DataFrameColum.PRICEENDSTEP.value,DataFrameColum.BUY_LIMIT_PRICE_RATIO.value,
+                                DataFrameColum.MIN_TRADE_NUM.value, DataFrameColum.SIZE_MULTIPLIER.value]  # Índices de las columnas que deseas mantener (0-indexed)
             
             self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
             
@@ -111,6 +112,9 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.NOTE_3.value] = "-"
             self.data_frame_bkp[DataFrameColum.NOTE_4.value] = "-"
             self.data_frame_bkp[DataFrameColum.NOTE_5.value] = "-"
+            self.data_frame_bkp[DataFrameColum.ERROR.value] = "-"
+            self.data_frame_bkp[DataFrameColum.FEE_BUY.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.FEE_SELL.value] = 0.0
 
             self.data_frame_bkp = DataFrameCheckUtil.create_price_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_adx_columns(data_frame=self.data_frame_bkp)
