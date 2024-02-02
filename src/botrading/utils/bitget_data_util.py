@@ -50,7 +50,7 @@ class BitgetDataUtil:
         
         if self.data_frame_bkp.empty:
             all_coins_df = self.client_bit.get_all_coins_filter_contract(productType=settings.FUTURE_CONTRACT)
-            
+
             #Remove selected coins
             all_coins_df = all_coins_df.drop(all_coins_df[all_coins_df[DataFrameColum.BASE.value].isin(self.crypto_remove)].index)
 
