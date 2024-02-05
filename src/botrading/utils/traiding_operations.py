@@ -90,6 +90,7 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 print ('sideType: ' + str(sideType))
                 print ('takeProfit: ' + str(takeProfit))
                 print ('stopLoss: ' + str(stopLoss))
+                
 
                 takeProfit = PriceUtil.multiple_next_limit (takeProfit, price_place, price_end_step)
                 stopLoss = PriceUtil.multiple_next_limit (stopLoss, price_place, price_end_step)

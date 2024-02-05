@@ -11,6 +11,7 @@ class ColumStateValues(Enum):
     ERR_SELL = "ERR-SELL"
     ERR_BUY = "ERR-BUY"
     BLCK_INS_MNY = "BLCK_INS_MNY"
+    BLOCKED = "BLOCKED"
 
     @classmethod
     def list(cls):

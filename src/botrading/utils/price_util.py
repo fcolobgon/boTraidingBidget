@@ -113,3 +113,20 @@ class PriceUtil:
         except ZeroDivisionError:
             # Manejar el caso en que el multiplicador sea cero
             return value
+    
+    def longitud_parte_decimal(numero):
+        # Convertir el número a cadena de texto
+        cadena_numero = str(numero)
+
+        # Verificar si hay un punto decimal en la cadena
+        if '.' in cadena_numero:
+            # Encontrar la posición del punto decimal
+            indice_punto_decimal = cadena_numero.index('.')
+
+            # Calcular la longitud de la parte decimal
+            longitud_decimal = len(cadena_numero) - indice_punto_decimal - 1
+
+            return longitud_decimal
+        else:
+            # Si no hay punto decimal, la longitud es 0
+            return 0
