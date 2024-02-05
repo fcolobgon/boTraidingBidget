@@ -140,9 +140,6 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
     for ind in df_sell.index:
 
         symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]
-        sideType = str(df_sell.loc[ind, DataFrameColum.SIDE_TYPE.value])
-        quantity_usdt = df_sell.loc[ind,DataFrameColum.MONEY_SPENT.value] 
-        price_coin_buy = df_sell.loc[ind,DataFrameColum.SIZE.value]
         margin_coin = settings.MARGINCOIN
 
         #Solo se ejecuta en para modo TEST
@@ -151,19 +148,21 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
             baseCoin = 'S' +  df_sell.loc[ind,DataFrameColum.BASE.value]
             mode = 'S' + settings.FUTURE_CONTRACT
             symbol = baseCoin + margin_coin + "_" + mode
+            
+        for ind in df_sell.index:
+            
+            symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]
+            trackingNo = df_sell.loc[ind,DataFrameColum.ORDER_ID.value]
+            
+            order = clnt_bit.client_bit.mix_cp_close_position(symbol=symbol,trackingNo=trackingNo)
 
-        price_convert_coin_to_usdt, price_coin = TradingUtil.convert_price_coin_to_usdt(clnt_bit = clnt_bit, quantity_usdt=quantity_usdt, price_convert_coin = price_coin_buy, symbol=symbol)
-
-        order = TradingUtil.sell_with_retries(clnt_bit, symbol, margin_coin, price_convert_coin_to_usdt, sideType)
-
-        if order['msg'] == 'success':
-            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
-            df_sell[DataFrameColum.ORDER_OPEN.value] = False
-            df_sell[DataFrameColum.PRICE_SELL.value][ind] = price_coin
-            df_sell[DataFrameColum.ORDER_ID.value] = "-"
-            df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
-        else:
-            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
+            if order['msg'] == 'success':
+                df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
+                df_sell[DataFrameColum.ORDER_OPEN.value] = False
+                df_sell[DataFrameColum.ORDER_ID.value] = "-"
+                df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
+            else:
+                df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
 
     excel_util.save_sell_file(df_sell)
 

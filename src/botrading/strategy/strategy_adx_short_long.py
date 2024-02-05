@@ -30,6 +30,15 @@ class Strategy:
     def get_time_range(self) -> TimeRanges:
         return TimeRanges("HOUR_4")
 
+    def side_type(self, row):
+        
+        if row[DataFrameColum.AO_ASCENDING.value] == True:
+            return FutureValues.SIDE_TYPE_LONG.value
+        
+        if row[DataFrameColum.AO_ASCENDING.value] == False:
+            return FutureValues.SIDE_TYPE_SHORT.value
+        
+        return "-"
 
     def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
         
@@ -43,7 +52,6 @@ class Strategy:
             
             self.first_iteration = False
             df[DataFrameColum.LOOK.value] = False
-            df[DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
             df[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
             df[DataFrameColum.LEVEREAGE.value] = 10
 
@@ -68,8 +76,7 @@ class Strategy:
             
             self.print_data_frame(message="DATOS COMPRA ACTUALIZADO", data_frame=df)
             
-            query = DataFrameColum.AO_ASCENDING.value + " == True"
-            df = df.query(query)
+            df = df.apply(self.side_type, axis=1)
             self.print_data_frame(message="DATOS COMPRA AO_ASCENDING FILTRADO", data_frame=df)
 
             query = DataFrameColum.ADX_ANGLE.value + " < 110"
