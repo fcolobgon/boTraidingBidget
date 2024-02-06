@@ -140,8 +140,17 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
 
     for ind in df_sell.index:
 
-        symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]
+        symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]        
+        sideType = str(df_sell.loc[ind, DataFrameColum.SIDE_TYPE.value])
+        levereage = int(df_sell.loc[ind,DataFrameColum.LEVEREAGE.value])
+        quantity_usdt = int(df_sell.loc[ind,DataFrameColum.MONEY_SPENT.value])
         margin_coin = settings.MARGINCOIN
+        price_place = int(df_sell.loc[ind,DataFrameColum.PRICEPLACE.value])
+        price_end_step = int(df_sell.loc[ind,DataFrameColum.PRICEENDSTEP.value])
+        volume_place = int(df_sell.loc[ind,DataFrameColum.VOLUMEPLACE.value])
+
+        size, price_coin_buy = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
+        formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
 
         #Solo se ejecuta en para modo TEST
         if settings.BITGET_CLIENT_TEST_MODE == True:
@@ -149,21 +158,18 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
             baseCoin = 'S' +  df_sell.loc[ind,DataFrameColum.BASE.value]
             mode = 'S' + settings.FUTURE_CONTRACT
             symbol = baseCoin + margin_coin + "_" + mode
-            
-        for ind in df_sell.index:
-            
-            symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]
-            trackingNo = df_sell.loc[ind,DataFrameColum.ORDER_ID.value]
-            
-            order = clnt_bit.client_bit.mix_cp_close_position(symbol=symbol,trackingNo=trackingNo)
+                        
+        symbol = str(symbol).upper()
+        
+        order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'close_' + sideType, orderType = 'market') 
 
-            if order['msg'] == 'success':
-                df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
-                df_sell[DataFrameColum.ORDER_OPEN.value] = False
-                df_sell[DataFrameColum.ORDER_ID.value] = "-"
-                df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
-            else:
-                df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
+        if order['msg'] == 'success':
+            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
+            df_sell[DataFrameColum.ORDER_OPEN.value] = False
+            df_sell[DataFrameColum.ORDER_ID.value] = "-"
+            df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
+        else:
+            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
 
     excel_util.save_sell_file(df_sell)
 
