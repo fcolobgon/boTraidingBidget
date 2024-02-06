@@ -99,11 +99,7 @@ class Strategy:
                 return df
                 
         df = df.query(DataFrameColum.LOOK.value + " == True")        
-        df = bitget_data_util.updating_price(data_frame = df)  
-
-        if df.empty:
-            self.update_4h = fecha_actual
-            return df          
+        df = bitget_data_util.updating_price(data_frame = df)   
         
         self.print_data_frame(message="EJECUCION COMPRA ", data_frame=df)
         
