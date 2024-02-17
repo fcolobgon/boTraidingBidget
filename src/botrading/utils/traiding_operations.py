@@ -149,7 +149,7 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
         price_end_step = int(df_sell.loc[ind,DataFrameColum.PRICEENDSTEP.value])
         volume_place = int(df_sell.loc[ind,DataFrameColum.VOLUMEPLACE.value])
 
-        size, price_coin_buy = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
+        size, price_coin_sell = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
         formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
 
         #Solo se ejecuta en para modo TEST
@@ -168,6 +168,8 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
             df_sell[DataFrameColum.ORDER_OPEN.value] = False
             df_sell[DataFrameColum.ORDER_ID.value] = "-"
             df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
+            df_sell[DataFrameColum.PRICE_SELL.value] = price_coin_sell
+
         else:
             df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
 
