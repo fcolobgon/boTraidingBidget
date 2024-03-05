@@ -8,6 +8,14 @@ from src.botrading.bit import BitgetClienManager
 import math
 
 class PriceUtil:
+
+    @staticmethod
+    def percentage_number(value, percentage):
+        
+        percentage = percentage/100
+        qty = value * percentage
+        return qty
+    
     
     @staticmethod
     def plus_percentage_price(price, percentage):
@@ -46,6 +54,11 @@ class PriceUtil:
 
         return size, price_coin
     
+    def get_price_coin(clnt_bit: BitgetClienManager, symbol):
+
+        return float(clnt_bit.client_bit.mix_get_single_symbol_ticker(symbol=symbol)['data']['last'])
+
+         
     @staticmethod
     def formatting_the_price(size, price_place, price_end_step, volume_place):
 
