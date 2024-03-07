@@ -96,7 +96,7 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.MONEY_SPENT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.SIZE.value] = 0.0
 
-            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
+            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
@@ -418,9 +418,9 @@ class BitgetDataUtil:
     
     def list_is_ascending(self, check_list:numpy=[], ascending_count:int = 3, previous_period:int = 0) -> bool:
 
-        elements = check_list[-ascending_count:]
-        is_ascending = all(elements[i] <= elements[i+1] for i in range(len(elements)-1))
-        return is_ascending
+        #elements = check_list[-ascending_count:]
+        #is_ascending = all(elements[i] <= elements[i+1] for i in range(len(elements)-1))
+        return check_list[-1] > check_list[-2]
  
     def cruce_zero(self, series:numpy) -> str:
 
