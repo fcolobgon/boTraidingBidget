@@ -63,26 +63,15 @@ def calc_mfi(high, low, close, volume, length=14):
     return pd.Series(mfi)
 
 def calc_stoch(src, length=21, smooth_fast_d=3):
-    """
-    Calculates the Stochastic Oscillator with smoothing for the Fast D line.
-
-    Args:
-        src (pd.Series): The price data (usually closing price).
-        length (int, optional): The lookback window for the Stochastic Oscillator. Defaults to 21.
-        smooth_fast_d (int, optional): The smoothing window for the Fast D line. Defaults to 3.
-
-    Returns:
-        pd.Series: The Slow %K and Fast %D lines of the Stochastic Oscillator.
-    """
 
     ll = src.rolling(window=length).min()
     hh = src.rolling(window=length).max()
-    fast_k = 100 * (src - ll) / (hh - ll)  # Calculate %K (Fast Stochastic)
+    fast_k = 100 * (src - ll) / (hh - ll) 
 
-    # Apply smoothing for Fast D line
-    slow_d = fast_k.ewm(alpha=1/smooth_fast_d, min_periods=smooth_fast_d).mean()
+    #slow_d = fast_k.ewm(alpha=1/smooth_fast_d, min_periods=smooth_fast_d).mean()
+    slow_d = pandas_ta.sma(close=fast_k, length=smooth_fast_d)
 
-    return slow_d  # Assuming you only need the Fast D (%D) line
+    return slow_d
 
 # Main script
 def calculate(data:pd.DataFrame):
@@ -95,8 +84,8 @@ def calculate(data:pd.DataFrame):
     pvi = pd.Series()
     pvi = calc_pvi(data)
     pvim = pandas_ta.ema(close = pvi, length = 15)
-    pvimax = pvim.rolling(window=90).max()
-    pvimin = pvim.rolling(window=90).min()
+    pvimax = pvim.rolling(window=91).max()
+    pvimin = pvim.rolling(window=91).min()
     oscp = 100 * (pvi - pvim) / (pvimax - pvimin)
 
     nvi = calc_nvi(data)
@@ -116,16 +105,13 @@ def calculate(data:pd.DataFrame):
     BollOsc = 100 * ((tprice - OB1) / OB2)
 
     xrsi = pd.Series(pandas_ta.rsi(tprice, window=14))  # Consider using ta.rsi from `ta` library
-    print(tprice)
     stoc = calc_stoch(tprice, 21, 3)  # Function not provided, replace with custom or ta.stoch from `
-    print("STOC")
-    print(stoc)
-    print("--------------------------------")
     marron = (xrsi + xmf + BollOsc + (stoc / 3))/2
     print("MARRON")
     print(marron)
     print("--------------------------------")
     verde = marron + oscp
+    print(oscp)
     print("VERDE")
     print(verde)
     print("--------------------------------")
@@ -137,4 +123,8 @@ def calculate(data:pd.DataFrame):
     print("MEDIA")
     print(media)
     print("--------------------------------")
+    print("azul " + str(azul.iloc[-1]))
+    print("verde " + str(verde.iloc[-1]))
+    print("marron " + str(marron.iloc[-1]))
+    print("media " + str(media.iloc[-1]))
     print("fin")
