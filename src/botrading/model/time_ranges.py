@@ -57,7 +57,7 @@ class TimeRanges:
         elif type == "HOUR_4":
             self.name = "HOUR_4"
             self.interval = "4H"
-            self.x_days = 15
+            self.x_days = 300
             self.refresh_time = 60 * 60 * 4
             self.millis_correlation = 1000*60*60*4
         elif type == "DAY_1":

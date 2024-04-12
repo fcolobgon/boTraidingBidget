@@ -56,7 +56,7 @@ class TelegramNotify:
             for ind in dataframe.index:
                 if settings:
                     coin = dataframe.loc[ind, DataFrameColum.BASE.value]
-                    url_message = "Nueva compra https://www.binance.com/es/trade/" + str(coin) + "_USDT"
+                    url_message = "https://www.bitget.com/es-ES/futures/usdt/" + str(coin) + "USDT"
                     apiURL = f'https://api.telegram.org/bot' + settings.TELEGRAM_BOT_TOKEN + '/sendMessage'
                     requests.post(apiURL, json={'chat_id': settings.CHATID, 'text': url_message})
                     if message.strip == False:
