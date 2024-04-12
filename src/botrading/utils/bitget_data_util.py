@@ -256,7 +256,7 @@ class BitgetDataUtil:
                 adx = ADXIndicator(high = prices_high, low = prices_low, close = prices_close, window= series).adx()
                 adx_numpy = numpy.array(adx)
                 adx_numpy = adx_numpy[~numpy.isnan(adx_numpy)]
-                #data_frame[DataFrameColum.ADX.value][ind] = adx_numpy
+                data_frame[DataFrameColum.ADX.value][ind] = adx_numpy
                 data_frame.loc[ind, DataFrameColum.ADX_LAST.value] = self.get_last_element(element_list = adx_numpy, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.ADX_ASCENDING.value] = self.list_is_ascending(check_list = adx_numpy, ascending_count = ascending_count, previous_period = previous_period)
                 #data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = self.angle_one_line(line_points = adx_numpy, time_points = open_time_arr, time_range = time_range)
@@ -339,7 +339,34 @@ class BitgetDataUtil:
         blue_line = "STOCHRSIk_" + str(long_stoch) + "_" + str(long_rsi) + "_" + str(smooth_k) + "_" + str(smooth_d)
         red_line = "STOCHRSId_" + str(long_stoch) + "_" + str(long_rsi) + "_" + str(smooth_k) + "_" + str(smooth_d)
         
-        data_frame = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=data_frame)
+        #data_frame = DataFrameCheckUtil.create_rsi_stoch_columns(data_frame=data_frame)
+
+        if DataFrameColum.RSI_STOCH_GOOD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_GOOD_LINE.value] = "-"
+
+        if DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value] = 0.0
+
+        if DataFrameColum.RSI_STOCH_GOOD_LINE_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_GOOD_LINE_ASCENDING.value] = "-"
+
+        if DataFrameColum.RSI_STOCH_GOOD_LINE_ANGLE.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_GOOD_LINE_ANGLE.value] = 0.0
+
+        if DataFrameColum.RSI_STOCH_BAD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_BAD_LINE.value] = "-"           
+
+        if DataFrameColum.RSI_STOCH_BAD_LINE_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_BAD_LINE_LAST.value] = 0.0
+
+        if DataFrameColum.RSI_STOCH_BAD_LINE_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_BAD_LINE_ASCENDING.value] = "-"     
+
+        if DataFrameColum.RSI_STOCH_BAD_LINE_ANGLE.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_BAD_LINE_ANGLE.value] = 0.0
+
+        if DataFrameColum.RSI_STOCH_CRUCE_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_STOCH_CRUCE_LINE.value] = "-"     
 
         for ind in data_frame.index:
 
@@ -383,7 +410,25 @@ class BitgetDataUtil:
         length = config_ma.length
         type = config_ma.type
         
-        data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
+        #data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
+
+        if DataFrameColum.MA.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA.value] = "-"
+
+        if DataFrameColum.MA_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA_LAST.value] = 0.0
+
+        if DataFrameColum.MA_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA_ASCENDING.value] = "-"
+
+        if DataFrameColum.MA_LAST_ANGLE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA_LAST_ANGLE.value] = 0.0
+
+        if DataFrameColum.MA_OPEN_PRICE_PERCENTAGE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA_OPEN_PRICE_PERCENTAGE.value] = 0.0
+
+        if DataFrameColum.MA_CLOSE_PRICE_PERCENTAGE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MA_CLOSE_PRICE_PERCENTAGE.value] = 0.0
         
         for ind in data_frame.index:
 
@@ -406,7 +451,7 @@ class BitgetDataUtil:
                 data_frame[DataFrameColum.MA.value][ind] = ma_numpy
                 data_frame.loc[ind, DataFrameColum.MA_ASCENDING.value] = self.list_is_ascending(check_list = ma_numpy, ascending_count = ascending_count, previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.MA_LAST.value] = self.get_last_element(element_list = ma_numpy, previous_period = previous_period)
-                #data_frame.loc[ind, DataFrameColum.MA_LAST_ANGLE.value] = MathCal_util.angle(values=ma_numpy, time_range=time_range)
+                data_frame.loc[ind, DataFrameColum.MA_LAST_ANGLE.value] = self.angle(ma_numpy, last_numbers = 20)
                 #data_frame.loc[ind, DataFrameColum.MA_OPEN_PRICE_PERCENTAGE.value] = (self.get_last_element(element_list = open_price_arr) * 100.0 / self.get_last_element(element_list = ma_numpy)) - 100
                 #data_frame.loc[ind, DataFrameColum.MA_CLOSE_PRICE_PERCENTAGE.value] = (self.get_last_element(element_list = close_price_arr) * 100.0 / self.get_last_element(element_list = ma_numpy)) - 100
                 
@@ -545,3 +590,31 @@ class BitgetDataUtil:
         print("Error creando " + str(indicator))
         print(str(e))
         print("Posible nueva cripto " + str(symbol))
+
+
+    def angle(self, list, last_numbers:int):
+        # Calcular la media de los precios de cierre
+        #mean_close = df['Close'].mean()
+
+        # Calcular la desviación estándar de los precios de cierre
+        #std_close = df['Close'].std()
+        result_list = list[-last_numbers:]
+        df = pandas.DataFrame(result_list, columns=['values'])
+
+        df['Index'] = numpy.arange(len(df))
+
+        # Calcular la pendiente de la línea de regresión
+        slope = numpy.cov(df['values'], df['Index'])[0, 1] / numpy.var(df['Index'])
+
+
+        # Calcular el ángulo de regresión en radianes
+        angle_radians = numpy.arctan2(slope, 1)
+
+        # Convertir radianes a grados
+        angle_degrees = numpy.rad2deg(angle_radians) % 180
+        
+        # Ajustar al rango deseado (-90 a 90 grados)
+        if angle_degrees > 90:
+            angle_degrees = angle_degrees - 180
+
+        return angle_degrees
