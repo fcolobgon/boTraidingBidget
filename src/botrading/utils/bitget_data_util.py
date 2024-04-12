@@ -4,10 +4,13 @@ from typing import List
 import pandas
 import numpy
 from math import atan
-
+from decimal import Decimal
+import pandas_ta.momentum
+import pandas_ta.volume
 from ta.trend import ADXIndicator
 import pandas_ta 
 
+from src.botrading.utils import koncorde
 from src.botrading.utils import traiding_operations
 from src.botrading.utils.math_calc_util import MathCal_util
 from src.botrading.constants import botrading_constant
@@ -142,11 +145,12 @@ class BitgetDataUtil:
                 "Volume",
                 "Close time"
                 ]]
-            
+
             prices_history['Open'] = prices_history['Open'].astype(float)
             prices_history['High'] = prices_history['High'].astype(float)
             prices_history['Low'] = prices_history['Low'].astype(float)
             prices_history['Close'] = prices_history['Close'].astype(float)
+            prices_history['Volume'] = prices_history['Volume'].astype(float)
             
             dict_values[symbol] = prices_history
 
@@ -264,6 +268,31 @@ class BitgetDataUtil:
                 continue
         
         return data_frame  
+    
+    def updating_koncorde(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
+
+        length = 255
+        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            
+            try:
+                
+                prices_history = prices_history_dict[symbol]
+                
+                high = numpy.array(prices_history['High'].astype(float))
+                low = numpy.array(prices_history['Low'].astype(float))
+                close = numpy.array(prices_history['Close'].astype(float))
+                volume = numpy.array(prices_history['Volume'].astype(float))
+                
+                koncorde.calculate(prices_history)
+                                                                    
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "KONCORDE", e)
+                continue
+        
+        return data_frame 
     
     def updating_ao(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
 
