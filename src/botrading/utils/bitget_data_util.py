@@ -431,6 +431,86 @@ class BitgetDataUtil:
                 continue
         
         return data_frame
+    
+    def updating_macd(self, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0):
+        
+        fast=config_macd.fast
+        slow=config_macd.slow
+        signal=config_macd.signal
+
+        if DataFrameColum.MACD_GOOD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_GOOD_LINE.value] = "-"
+
+        if DataFrameColum.MACD_BAD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_BAR_CHART.value] = "-"
+
+        if DataFrameColum.MACD_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_LAST.value] = "-"
+
+        if DataFrameColum.MACD_LAST_CHART.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_LAST_CHART.value] = "-"
+    
+        if DataFrameColum.MACD_PREVIOUS_CHART.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_PREVIOUS_CHART.value] = "-"
+
+        if DataFrameColum.MACD_CHART_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CHART_ASCENDING.value] = "-"
+
+        if DataFrameColum.MACD_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_ASCENDING.value] = "-"
+
+        if DataFrameColum.MACD_CRUCE_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CRUCE_LINE.value] = "-"
+
+        if DataFrameColum.MACD_CRUCE_ZERO.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CRUCE_ZERO.value] = "-"
+
+
+        chars = "MACDh_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        blue_line = "MACD_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        red_line = "MACDs_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        
+        data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
+                        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+
+            try:
+                
+                if prices_history_dict == None:
+                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
+                else:
+                    prices_history = prices_history_dict[symbol]
+                
+                prices_close = prices_history['Close'].astype(float)
+
+                macd =  pandas_ta.macd(close = prices_close, fast=fast, slow=slow, signal=signal)
+                
+                macd_numpy = numpy.array(macd[blue_line])
+                macd_h_numpy = numpy.array(macd[chars])
+                macd_s_numpy = numpy.array(macd[red_line])
+                
+                macd_numpy = macd_numpy[~numpy.isnan(macd_numpy)]
+                macd_h_numpy = macd_h_numpy[~numpy.isnan(macd_h_numpy)]
+                macd_s_numpy = macd_s_numpy[~numpy.isnan(macd_s_numpy)]
+        
+                #data_frame[DataFrameColum.MACD_BAR_CHART.value][ind] = macd_h_numpy
+                data_frame[DataFrameColum.MACD_GOOD_LINE.value][ind] = macd_numpy
+                data_frame[DataFrameColum.MACD_BAD_LINE.value][ind] = macd_s_numpy
+                data_frame.loc[ind, DataFrameColum.MACD_LAST.value] = self.get_last_element(element_list = macd_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_LAST_CHART.value] = self.get_last_element(element_list = macd_h_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_PREVIOUS_CHART.value] = macd_h_numpy[-2]
+                data_frame.loc[ind, DataFrameColum.MACD_CHART_ASCENDING.value] = self.list_is_ascending(check_list = macd_h_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_ASCENDING.value] = self.list_is_ascending(check_list = macd_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy, ascending_count, previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_ZERO.value] = self.cruce_zero(macd_h_numpy)
+                
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "MACD", e)
+                continue
+        
+        return data_frame 
 
     def update_percentage_profit(self, data_frame:pandas.DataFrame=pandas.DataFrame()) -> pandas.DataFrame:
         
