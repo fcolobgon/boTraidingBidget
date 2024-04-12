@@ -84,8 +84,8 @@ def calculate(data:pd.DataFrame):
     pvi = pd.Series()
     pvi = calc_pvi(data)
     pvim = pandas_ta.ema(close = pvi, length = 15)
-    pvimax = pvim.rolling(window=91).max()
-    pvimin = pvim.rolling(window=91).min()
+    pvimax = pvim.rolling(window=90).max()
+    pvimin = pvim.rolling(window=90).min()
     oscp = 100 * (pvi - pvim) / (pvimax - pvimin)
 
     nvi = calc_nvi(data)
