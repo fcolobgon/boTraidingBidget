@@ -21,37 +21,37 @@ class TimeRanges:
         if type == "MINUTES_1":
             self.name = "MINUTES_1"
             self.interval = "1m"
-            self.x_days = 5
+            self.x_days = 300
             self.refresh_time = 60
             self.millis_correlation = 1000*60
         elif type == "MINUTES_5":
             self.name = "MINUTES_5"
             self.interval = "5m"
-            self.x_days = 15
+            self.x_days = 300
             self.refresh_time = 60 * 5
             self.millis_correlation = 1000*60*5
         elif type == "MINUTES_15":
             self.name = "MINUTES_15"
             self.interval = "15m"
-            self.x_days = 5
+            self.x_days = 300
             self.refresh_time = 60 * 15
             self.millis_correlation = 1000*60*15
         elif type == "MINUTES_30":
             self.name = "MINUTES_30"
             self.interval = "30m"
-            self.x_days = 5
+            self.x_days = 300
             self.refresh_time = 60 * 30
             self.millis_correlation = 1000*60*30
         elif type == "HOUR_1":
             self.name = "HOUR_1"
             self.interval = "1H"
-            self.x_days = 15
+            self.x_days = 300
             self.refresh_time = 60 * 60
             self.millis_correlation = 1000*60*60
         elif type == "HOUR_2":
             self.name = "HOUR_2"
             self.interval = "2H"
-            self.x_days = 15
+            self.x_days = 300
             self.refresh_time = 60 * 60 * 2
             self.millis_correlation = 1000*60*60*2
         elif type == "HOUR_4":
@@ -63,13 +63,13 @@ class TimeRanges:
         elif type == "DAY_1":
             self.name = "DAY_1"
             self.interval = "1d"
-            self.x_days = 60
+            self.x_days = 300
             self.refresh_time = 60 * 60 * 24
             self.millis_correlation = 1000*60*60*24
         elif type == "WEEK":
             self.name = "WEEK"
             self.interval = "1w"
-            self.x_days = 360
+            self.x_days = 300
             self.refresh_time = 60 * 60 * 24
             self.millis_correlation = 1000*60*60*24
         else:
