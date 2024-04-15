@@ -75,7 +75,7 @@ def calc_stoch(src, length=21, smooth_fast_d=3):
     return slow_d
 
 # Main script
-def calculate(data:pd.DataFrame):
+def calculate(data:pd.DataFrame) -> pd.DataFrame:
 
     tprice = data[["Open", "High", "Low", "Close"]].mean(axis=1)
     length_ema = 255
@@ -110,29 +110,34 @@ def calculate(data:pd.DataFrame):
     
     marron:pd.Series
     marron = (xrsi + xmf + BollOsc + (stoc / 3))/2
-    print("MARRON")
-    print(marron)
-    print("--------------------------------")
+    #print("MARRON")
+    #print(marron)
+    #print("--------------------------------")
     
     verde:pd.Series
     verde = marron + oscp
-    print("VERDE")
-    print(verde)
-    print("--------------------------------")
+    #print("VERDE")
+    #print(verde)
+    #print("--------------------------------")
     
     azul:pd.Series
     azul = 100 * (nvi - nvim) / (nvimax - nvimin)
-    print("AZUL")
-    print(azul)
-    print("--------------------------------")
+    #print("AZUL")
+    #print(azul)
+    #print("--------------------------------")
     
     media = pandas_ta.ema(marron, m)
-    print("MEDIA")
-    print(media)
-    print("--------------------------------")
+    #print("MEDIA")
+    #print(media)
+    #print("--------------------------------")
     
-    print("azul " + str(azul.iloc[-1]))
-    print("verde " + str(verde.iloc[-1]))
-    print("marron " + str(marron.iloc[-1]))
-    print("media " + str(media.iloc[-1]))
-    print("fin")
+    #print("azul " + str(azul.iloc[-1]))
+    #print("verde " + str(verde.iloc[-1]))
+    #print("marron " + str(marron.iloc[-1]))
+    #print("media " + str(media.iloc[-1]))
+    
+    df = pd.DataFrame({ 'azul': azul,  'verde': verde,  'marron': marron,  'media': media})
+    df = df.dropna()
+    #print(df)
+    #print("fin")
+    return df
