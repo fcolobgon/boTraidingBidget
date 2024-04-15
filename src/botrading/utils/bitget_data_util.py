@@ -269,7 +269,7 @@ class BitgetDataUtil:
         
         return data_frame  
     
-    def updating_koncorde(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
+    def updating_koncorde_org(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
 
         length = 255
         
@@ -287,6 +287,40 @@ class BitgetDataUtil:
                 volume = numpy.array(prices_history['Volume'].astype(float))
                 
                 koncorde.calculate(prices_history)
+                                                                    
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "KONCORDE", e)
+                continue
+        
+        return data_frame 
+    
+    def updating_koncorde_v1(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
+
+        length = 255
+
+        if DataFrameColum.KONCORDE_AZUL.value not in data_frame.columns:
+            data_frame[DataFrameColum.KONCORDE_AZUL.value] = None
+
+        if DataFrameColum.KONCORDE_VERDE.value not in data_frame.columns:
+            data_frame[DataFrameColum.KONCORDE_VERDE.value] = None
+    
+        if DataFrameColum.KONCORDE_MARRON.value not in data_frame.columns:
+            data_frame[DataFrameColum.KONCORDE_MARRON.value] = None
+        
+        if DataFrameColum.KONCORDE_MEDIA.value not in data_frame.columns:
+            data_frame[DataFrameColum.KONCORDE_MEDIA.value] = None
+
+        for ind in data_frame.index:
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            try:                
+                prices_history = prices_history_dict[symbol]
+
+                azul, verde, marron, media = koncorde.calculate(prices_history)
+             
+                data_frame[DataFrameColum.KONCORDE_AZUL.value][ind] = azul
+                data_frame[DataFrameColum.KONCORDE_VERDE.value][ind] = verde
+                data_frame[DataFrameColum.KONCORDE_MARRON.value][ind] = marron
+                data_frame[DataFrameColum.KONCORDE_MEDIA.value][ind] = media
                                                                     
             except Exception as e:
                 self.print_error_updating_indicator(symbol, "KONCORDE", e)

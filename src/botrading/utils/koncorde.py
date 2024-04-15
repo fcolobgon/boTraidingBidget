@@ -136,3 +136,5 @@ def calculate(data:pd.DataFrame):
     print("marron " + str(marron.iloc[-1]))
     print("media " + str(media.iloc[-1]))
     print("fin")
+
+    return azul, verde, marron, media
