@@ -96,27 +96,34 @@ class Strategy:
 
         filtered_data_frame =  bitget_data_util.updating_open_orders(data_frame=filtered_data_frame, startTime=startTime)
 
+        Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
+
         time_range = TimeRanges("MINUTES_1")  #DAY_1  HOUR_4  MINUTES_1
 
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
         filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
 
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+        #query = query + " and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
         df_short = filtered_data_frame.query(query)
 
+        if df_short.empty == False:
+            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+        
+            return df_short
+
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+        #query = query + " and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
         df_long = filtered_data_frame.query(query)
 
-        df_sell = pandas.concat(df_short, df_long)
-
-        Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
-
-        if df_sell.empty == False:
-            df_sell.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+        if df_long.empty == False:
+            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
         
-        return df_sell
+            return df_long
+        
+        return filtered_data_frame
 
 
     def updating_koncorde(bitget_data_util: BitgetDataUtil, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
