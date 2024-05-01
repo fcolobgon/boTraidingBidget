@@ -62,7 +62,7 @@ class TimeRanges:
             self.millis_correlation = 1000*60*60*4
         elif type == "DAY_1":
             self.name = "DAY_1"
-            self.interval = "1d"
+            self.interval = "1D"
             self.x_days = 300
             self.refresh_time = 60 * 60 * 24
             self.millis_correlation = 1000*60*60*24
