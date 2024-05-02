@@ -1,306 +1,42 @@
-import time
-import numpy
-import pandas_ta 
+import urllib3
 
-from src.botrading.model.indocators import *
-from src.botrading.utils.bitget_data_util import BitgetDataUtil
-
-from src.botrading.utils import koncorde
+from src.botrading.thread.bitget_buy_thread import BitgetBuyThreed
+from src.botrading.thread.bitget_sell_thread import BitgetSellThreed
 from src.botrading.model.time_ranges import *
-from src.botrading.utils.rules_util import RuleUtils
-from src.botrading.utils.dataframe_util import DataFrameUtil
-from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
-from src.botrading.utils.enums.data_frame_colum import ColumStateValues
-from src.botrading.utils.enums.data_frame_colum import DataFrameColum
-from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
-from src.botrading.utils.enums.future_values import FutureValues
-from src.botrading.telegram.telegram_notify import TelegramNotify
-from src.botrading.utils.price_util import PriceUtil
 from src.botrading.utils import excel_util
-from datetime import datetime, timedelta
-
-from matplotlib import pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from src.botrading.bit import BitgetClienManager
+from src.botrading.telegram.telegram_bot import TelegramBot
+from src.botrading.strategy.strategy import Strategy
 
 from configs.config import settings as settings
 
-class Strategy:
-    name:str
+urllib3.disable_warnings()
 
-    def __init__(self, name:str):
+# ----------------------------  MAIN  -----------------------------
 
-        self.name = name
-        
-        self.startTime = datetime.now()
-        self.startTime = self.startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+strategy_name = "Estrategia X"
+strategy = Strategy(name=strategy_name)
 
-    def apply_buy(self, bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
-        
-        rules = [ColumStateValues.WAIT, ColumStateValues.SELL, ColumStateValues.ERR_BUY]
-        state_query = RuleUtils.get_rules_search_by_states(rules)
-        filtered_data_frame: pandas.DataFrame
-        filtered_data_frame = data_frame.query(state_query)
+if __name__ == '__main__':
+    output_data = []
 
-        filtered_df_master = filtered_data_frame
-
-        time_range = TimeRanges("MINUTES_1") #DAY_1  HOUR_4  MINUTES_1
-
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
-        filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
-
-        excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="kcd.xlsx")
-
-        query = "(" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
-        query = query + " and (KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2])"
-        query = query + " and ((KONCORDE_MEDIA.str[-3] < KONCORDE_VERDE.str[-3]) or (KONCORDE_MEDIA.str[-3] < KONCORDE_AZUL.str[-3]))"
-        df_short = filtered_data_frame.query(query)
-
-        query = "(" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
-        query = query + " and (KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2])"
-        query = query + " and ((KONCORDE_MEDIA.str[-3] > KONCORDE_VERDE.str[-3]) or (KONCORDE_MEDIA.str[-3] > KONCORDE_AZUL.str[-3]))"
-        df_long = filtered_data_frame.query(query)
-
-        excel_util.save_data_frame( data_frame=df_long, exel_name="kcd_l.xlsx")
-        excel_util.save_data_frame( data_frame=df_short, exel_name="kcd_s.xlsx")
-
-        if df_short.empty == False:
-            df_short.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-            df_short.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
-            df_short.loc[:, DataFrameColum.LEVEREAGE.value] = 2
-            df_short.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short)
-
-
-        if df_long.empty == False:
-            df_long.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-            df_long.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
-            df_long.loc[:, DataFrameColum.LEVEREAGE.value] = 2
-            df_long.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long)
-
-        df_sorted = filtered_df_master.sort_values(by='VOLUME', ascending=False)
-
-        return df_sorted
+    urllib3.disable_warnings()
     
-    @staticmethod
-    def apply_sell(bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
+    excel_util.custom_init(settings.FILES_BASE_PATH)
 
-        rules = [ColumStateValues.BUY]
-        state_query = RuleUtils.get_rules_search_by_states(rules)
-        filtered_data_frame = data_frame.query(state_query)
+    client_bit = BitgetClienManager(test_mode = settings.BITGET_CLIENT_TEST_MODE, api_key = settings.API_KEY_BIT, api_secret = settings.API_SECRET_BIT, api_passphrase = settings.API_PASSPHRASE_BIT)
 
-        startTime = datetime.now()
-        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+    print("### START MAIN ###")
+    bitget_buy_threed = BitgetBuyThreed(client_bit = client_bit, strategy = strategy, max_coin_buy = settings.MAX_COIN_BUY, quantity_buy_order = settings.QUANTITY_BUY_ORDER, load_from_previous_execution = settings.LOAD_FROM_PREVIOUS_EXECUTION, observe_coin_list=settings.OBSERVE_COIN_LIST, remove_coin_list=settings.REMOVE_COIN_LIST)
+    bitget_buy_threed.start()
+    bitget_buy_threed.wait_buy_thread_ready()
 
-        filtered_data_frame =  bitget_data_util.updating_open_orders(data_frame=filtered_data_frame, startTime=startTime)
+    bitget_sell_threed = BitgetSellThreed(client_bit = client_bit, strategy = strategy, buy_thread = bitget_buy_threed)
+    bitget_sell_threed.start()
 
-        Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
-
-        time_range = TimeRanges("MINUTES_1")  #DAY_1  HOUR_4  MINUTES_1
-
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
-        filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
-
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        #query = query + " and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
-        df_short = filtered_data_frame.query(query)
-
-        if df_short.empty == False:
-            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-        
-            return df_short
-
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        #query = query + " and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + ")"
-        df_long = filtered_data_frame.query(query)
-
-        if df_long.empty == False:
-            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-        
-            return df_long
-        
-        return filtered_data_frame
-
-
-    def updating_koncorde(bitget_data_util: BitgetDataUtil, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
-
-        length = 255
-
-        if DataFrameColum.KONCORDE_AZUL.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_AZUL.value] = None
-
-        if DataFrameColum.KONCORDE_VERDE.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_VERDE.value] = None
+    """
+    bit_market_client = BitgetClienManager(api_key = settings.MARKET_API_KEY_BIN, api_secret = settings.MARKET_SECRET_KEY_BIN)
+    """
+    telegram_bot = TelegramBot(bit_client = client_bit, buy_thread = bitget_buy_threed, sell_thread = bitget_sell_threed, base_path = settings.FILES_BASE_PATH, bot_token = settings.TELEGRAM_BOT_TOKEN)
+    telegram_bot.start()
     
-        if DataFrameColum.KONCORDE_MARRON.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MARRON.value] = None
-        
-        if DataFrameColum.KONCORDE_MEDIA.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MEDIA.value] = None
-    
-        if DataFrameColum.KONCORDE_AZUL_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_AZUL_LAST.value] = None
-
-        if DataFrameColum.KONCORDE_VERDE_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_VERDE_LAST.value] = None
-
-        if DataFrameColum.KONCORDE_MARRON_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MARRON_LAST.value] = None
-
-        if DataFrameColum.KONCORDE_MEDIA_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MEDIA_LAST.value] = None
-
-        if DataFrameColum.VOLUME.value not in data_frame.columns:
-            data_frame[DataFrameColum.VOLUME.value] = None
-
-        for ind in data_frame.index:
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            try:                
-                prices_history = prices_history_dict[symbol]
-
-                azul, marron, verde, media = Strategy.get_konkorde_params(prices_history)
-                #azul, verde, marron, media = Strategy.calculate(prices_history)
-                #df_neg, df_pos, media = Strategy.plot_konkorde_montains(azul, marron, verde, media, "C:\\MIO\\grafico.png", start_row_num = 0)
-
-
-                azul = numpy.array(azul.astype(float))
-                verde = numpy.array(verde.astype(float))
-                marron = numpy.array(marron.astype(float))
-                media = numpy.array(media.astype(float))
-     
-                data_frame[DataFrameColum.KONCORDE_AZUL.value][ind] = azul
-                data_frame[DataFrameColum.KONCORDE_VERDE.value][ind] = verde
-                #data_frame[DataFrameColum.KONCORDE_MARRON.value][ind] = marron
-                data_frame[DataFrameColum.KONCORDE_MEDIA.value][ind] = media
-                data_frame[DataFrameColum.KONCORDE_AZUL_LAST.value][ind] = bitget_data_util.get_last_element(element_list = azul, previous_period = -1)
-                data_frame[DataFrameColum.KONCORDE_VERDE_LAST.value][ind] = bitget_data_util.get_last_element(element_list = verde, previous_period = -1)
-                #data_frame[DataFrameColum.KONCORDE_MARRON_LAST.value][ind] = self.get_last_element(element_list = marron, previous_period = -1)
-                data_frame[DataFrameColum.KONCORDE_MEDIA_LAST.value][ind] = bitget_data_util.get_last_element(element_list = media, previous_period = -1)
-                                                                    
-            except Exception as e:
-                bitget_data_util.print_error_updating_indicator(symbol, "KONCORDE", e)
-                continue
-        
-        return data_frame 
-
-    def get_konkorde_params(df_stocks):
-        # df['calc_nvi'] =  df.ta.nvi( cumulative=True, append=False) #calc_nvi(df)
-        # tprice=ohlc4
-        tprice = df_stocks[["Open", "High", "Low", "Close"]].mean(axis=1)
-        # lengthEMA = input(255, minval=1)
-        # pvi = calc_pvi()
-        # df['calc_pvi'] = df.ta.pvi( cumulative=True, append=False) #calc_pvi(df)
-        pvi = df_stocks.ta.pvi(cumulative=True, append=False)  # calc_pvi(df)       
-
-        m = 15
-        # pvim = ema(pvi, m)
-        pvim = pandas_ta.ema(close=pvi, length=m )
-        # pvimax = highest(pvim, 90)
-        # pvimax = lowest(pvim, 90)
-        pvimax = pvim.rolling(window=90).max()  # .shift(-89)
-        pvimin = pvim.rolling(window=90).min()  # .shift(-89)
-        # oscp = (pvi - pvim) * 100/ (pvimax - pvimin)
-        oscp = (pvi - pvim) * 100 / (pvimax - pvimin)
-        # nvi =calc_nvi()
-        # nvim = ema(nvi, m)
-        # nvimax = highest(nvim, 90)
-        # nvimin = lowest(nvim, 90)
-        # azul = (nvi - nvim) * 100/ (nvimax - nvimin)
-        nvi = df_stocks.ta.nvi(cumulative=True, append=False)  # calc_nvi(df)
-        nvim = pandas_ta.ema(close=nvi, length=m )
-        nvimax = nvim.rolling(window=90).max()  # .shift(-89)
-        nvimin = nvim.rolling(window=90).min()  # .shift(-89)
-        val_blue = (nvi - nvim) * 100 / (nvimax - nvimin)
-        xmf = pandas_ta.mfi(close = df_stocks["Close"], volume=df_stocks["Volume"], high=df_stocks["High"], low=df_stocks["Low"],length=14)
-        #xmf = talib.MFI(df_stocks['High'], df_stocks['Low'], df_stocks['Close'], df_stocks['Volume'], timeperiod=14)
-        # mult=input(2.0)
-        basis = pandas_ta.sma(tprice, 25)
-        dev = 2.0 * pandas_ta.stdev(tprice, 25)
-        upper = basis + dev
-        lower = basis - dev
-        # OB1 = (upper + lower) / 2.0
-        # OB2 = upper - lower
-        # BollOsc = ((tprice - OB1) / OB2 ) * 100
-        # xrsi = rsi(tprice, 14)
-        OB1 = (upper + lower) / 2.0
-        OB2 = upper - lower
-        BollOsc = ((tprice - OB1) / OB2) * 100
-        #xrsi = pandas_ta.rsi(tprice, 14)
-        xrsi = pandas.Series(pandas_ta.rsi(tprice, window=14))
-
-        # calc_stoch(src, length,smoothFastD ) =>
-        #     ll = lowest(low, length)
-        #     hh = highest(high, length)
-        #     k = 100 * (src - ll) / (hh - ll)
-        #     sma(k, smoothFastD)
-        def calc_stoch(src, length, smoothFastD):
-            ll = df_stocks['Low'].rolling(window=length).min()
-            hh = df_stocks['High'].rolling(window=length).max()
-            k = 100 * (src - ll) / (hh - ll)
-            return pandas_ta.sma(k, smoothFastD)
-
-        stoc = calc_stoch(tprice, 21, 3)
-        # stoc = py_ti.stochastic(tprice, 21, 3)
-        val_brown = (xrsi + xmf + BollOsc + (stoc / 3)) / 2
-        val_green = val_brown + oscp
-        val_avg = pandas_ta.ema(val_brown, timeperiod=m)
-
-        return val_blue, val_brown, val_green, val_avg, 
-
-    def plot_konkorde_montains(azul, marron, verde, media, path, start_row_num = 0):
-
-        azul = azul.tail(10)
-        marron = marron.tail(10)
-        verde = verde.tail(10)
-        media = media.tail(10)
-
-        df_plot = pandas.DataFrame({'azul': azul, 'marron': marron, 'verde': verde})[start_row_num:]
-
-        cols = ['verde', 'marron', 'verde', 'media']
-        colors = ['green', 'brown', 'cyan', 'red']
-        # df = pd.DataFrame(columns=cols, data=[verde, marron, azul, media])
-        fig, ax = plt.subplots()
-        # split dataframe df into negative only and positive only values
-        df_neg, df_pos = df_plot.clip(upper=0), df_plot.clip(lower=0)
-        # stacked area plot of positive values
-        df_pos.plot.area(ax=ax, stacked=True, linewidth=0.)
-        # reset the color cycle
-        ax.set_prop_cycle(None)
-        # stacked area plot of negative values, prepend column names with '_' such that they don't appear in the legend
-        df_neg.rename(columns=lambda x: '_' + x).plot.area(ax=ax, stacked=True, linewidth=0.)
-        # rescale the y axis
-        print (df_neg.sum(axis=1).min())
-        print (df_pos.sum(axis=1).max())
-        #ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
-        ax.set_ylim([-200, 200])
-        ax.autoscale(enable=True)
-        ax.plot(media[start_row_num:], color="red")
-        # ax.plot(df['High'][start_row_num:] * 0.4, color="black")
-        plt.savefig(path)
-
-        print (df_neg)
-        print (df_pos)
-        print (df_plot)
-
-        return df_plot, media
-
-    @staticmethod
-    def print_data_frame(message: str, data_frame: pandas.DataFrame):
-
-        if data_frame.empty == False:
-            print("#####################################################################################################################")
-            print(message)
-            print(
-                data_frame[[DataFrameColum.SYMBOL.value,
-                            DataFrameColum.SIDE_TYPE.value,
-                            DataFrameColum.PERCENTAGE_PROFIT.value
-                            ]])
-            print("#####################################################################################################################")
-        else:
-            print("#####################################################################################################################")
-            print(message + " SIN DATOS")
-            print("#####################################################################################################################")
