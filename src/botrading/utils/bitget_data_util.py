@@ -192,6 +192,9 @@ class BitgetDataUtil:
         
         df = traiding_operations.get_open_positions(clnt_bit=self.client_bit)
 
+        if df.empty:
+            data_frame[DataFrameColum.ORDER_OPEN.value] = False
+
         for ind in data_frame.index:
             
             symbol = data_frame.loc[ind, DataFrameColum.BASE.value]
@@ -211,6 +214,7 @@ class BitgetDataUtil:
                 
                 if position == 0:
                     data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = False
+
             
             
         return data_frame
