@@ -24,6 +24,7 @@ from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.future_values import FutureValues
 from src.botrading.utils.dataframe_util import DataFrameUtil
+from sklearn.preprocessing import MinMaxScaler
 
 from configs.config import settings as settings
 
@@ -98,6 +99,8 @@ class BitgetDataUtil:
             self.data_frame_bkp[DataFrameColum.SIDE_TYPE.value] = "-"
             self.data_frame_bkp[DataFrameColum.MONEY_SPENT.value] = 0.0
             self.data_frame_bkp[DataFrameColum.SIZE.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.ROE.value] = 0.0
+            self.data_frame_bkp[DataFrameColum.PNL.value] = 0.0
 
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
             self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
@@ -167,10 +170,39 @@ class BitgetDataUtil:
 
             row_values = df[df["symbol"].str.contains(symbol)& (df['holdSide'] == sideType)] 
 
+            excel_util.save_data_frame( data_frame=row_values, exel_name="buy.xlsx")
+
             if row_values.empty == False:
 
                 profit = float(row_values["unrealizedPL"].values[0] )  
                 data_frame.loc[ind, DataFrameColum.PERCENTAGE_PROFIT.value] = profit
+                
+                position = float(row_values["total"].values[0])
+                
+                if position == 0:
+                    data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = False
+            
+            
+        return data_frame
+
+    def updating_pnl_roe_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame(), startTime:datetime=None):
+        
+        df = traiding_operations.get_open_positions(clnt_bit=self.client_bit)
+
+        for ind in data_frame.index:
+            
+            symbol = data_frame.loc[ind, DataFrameColum.BASE.value]
+            sideType = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
+
+            row_values = df[df["symbol"].str.contains(symbol)& (df['holdSide'] == sideType)] 
+
+            if row_values.empty == False:
+
+                pnl = float(row_values["unrealizedPL"].values[0] )
+                roe = (pnl/ float(row_values["margin"].values[0] ))*100
+
+                data_frame.loc[ind, DataFrameColum.ROE.value] = roe
+                data_frame.loc[ind, DataFrameColum.PNL.value] = pnl
                 
                 position = float(row_values["total"].values[0])
                 
@@ -294,40 +326,6 @@ class BitgetDataUtil:
         
         return data_frame 
     
-    def updating_koncorde_v1(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
-
-        length = 255
-
-        if DataFrameColum.KONCORDE_AZUL.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_AZUL.value] = None
-
-        if DataFrameColum.KONCORDE_VERDE.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_VERDE.value] = None
-    
-        if DataFrameColum.KONCORDE_MARRON.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MARRON.value] = None
-        
-        if DataFrameColum.KONCORDE_MEDIA.value not in data_frame.columns:
-            data_frame[DataFrameColum.KONCORDE_MEDIA.value] = None
-
-        for ind in data_frame.index:
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            try:                
-                prices_history = prices_history_dict[symbol]
-
-                azul, verde, marron, media = koncorde.calculate(prices_history)
-             
-                data_frame[DataFrameColum.KONCORDE_AZUL.value][ind] = azul
-                data_frame[DataFrameColum.KONCORDE_VERDE.value][ind] = verde
-                data_frame[DataFrameColum.KONCORDE_MARRON.value][ind] = marron
-                data_frame[DataFrameColum.KONCORDE_MEDIA.value][ind] = media
-                                                                    
-            except Exception as e:
-                self.print_error_updating_indicator(symbol, "KONCORDE", e)
-                continue
-        
-        return data_frame 
-    
     def updating_ao(self, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
 
         data_frame = DataFrameCheckUtil.create_ao_columns(data_frame=data_frame)
@@ -439,7 +437,7 @@ class BitgetDataUtil:
         
         return data_frame
 
-    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
+    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0, scalar = bool):
         
         length = config_ma.length
         type = config_ma.type
@@ -471,6 +469,8 @@ class BitgetDataUtil:
             try:
                 
                 prices_history = prices_history_dict[symbol]
+
+
 
                 close = prices_history['Close'].astype(float)
                 open_price = prices_history['Open'].astype(float)
@@ -574,6 +574,74 @@ class BitgetDataUtil:
                 continue
         
         return data_frame 
+
+    def updating_rsi(self, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 2, previous_period:int = 0):
+
+        if DataFrameColum.RSI.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI.value] = None
+
+        if DataFrameColum.RSI_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_ASCENDING.value] = None
+    
+        if DataFrameColum.RSI_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.RSI_LAST.value] = None
+
+        for ind in data_frame.index:
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            try:                
+                prices_history = prices_history_dict[symbol]
+
+                close = prices_history['Close'].astype(float)   
+
+                rsi = pandas_ta.rsi(length=length, close=close )
+
+                rsi_numpy = numpy.array(rsi)
+                rsi_numpy = rsi_numpy[~numpy.isnan(rsi_numpy)]
+
+                data_frame[DataFrameColum.RSI.value][ind] = rsi_numpy
+                data_frame[DataFrameColum.RSI_LAST.value][ind] = rsi_numpy[-1]
+                data_frame[DataFrameColum.RSI_ASCENDING.value][ind] = self.list_is_ascending(check_list = rsi_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                                                                    
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "RSI", e)
+                continue
+        
+        return data_frame 
+    
+    def updating_sma(self, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
+        
+        if DataFrameColum.SMA.value not in data_frame.columns:
+            data_frame[DataFrameColum.SMA.value] = "-"
+
+        if DataFrameColum.SMA_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.SMA_LAST.value] = 0.0
+
+        if DataFrameColum.SMA_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.SMA_ASCENDING.value] = "-"
+        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            
+            try:                
+                prices_history = prices_history_dict[symbol]
+
+                close = prices_history['Close'].astype(float)
+                  
+                sma = pandas_ta.ma(type, close, length = length)
+                sma_numpy = numpy.array(sma)
+                sma_numpy = sma_numpy[~numpy.isnan(sma_numpy)]
+                                
+                data_frame[DataFrameColum.SMA.value][ind] = sma_numpy
+                data_frame.loc[ind, DataFrameColum.SMA_ASCENDING.value] = self.list_is_ascending(check_list = sma_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.SMA_LAST.value] = self.get_last_element(element_list = sma_numpy, previous_period = previous_period)
+               
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "SMA", e)
+                continue
+        
+        return data_frame
+
 
     def update_percentage_profit(self, data_frame:pandas.DataFrame=pandas.DataFrame()) -> pandas.DataFrame:
         
