@@ -26,7 +26,7 @@ def calc_pvi(data):
             else:
                 pvi_actual = pvi[-1]
             pvi.append(pvi_actual)
-    #print(pvi)
+    print(pvi)
     return pd.Series(pvi)      
 
 # Function for Negative Volume Index (NVI)
@@ -80,9 +80,9 @@ def calculate(data:pd.DataFrame) -> pd.DataFrame:
     tprice = data[["Open", "High", "Low", "Close"]].mean(axis=1)
     length_ema = 255
     m = 15
-
+    print(data)
     # Calculate indicators (replace with `ta` library functions if available)
-    pvi:pd.Series
+    pvi = pd.Series()
     pvi = calc_pvi(data)
     pvim = pandas_ta.ema(close = pvi, length = 15)
     pvimax = pvim.rolling(window=90).max()
