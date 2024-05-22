@@ -159,6 +159,9 @@ class BitgetDataUtil:
     def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame(), startTime:datetime=None):
         
         df = traiding_operations.get_open_positions(clnt_bit=self.client_bit)
+        
+        if df.empty:
+            data_frame[DataFrameColum.ORDER_OPEN.value] = False
 
         for ind in data_frame.index:
             
