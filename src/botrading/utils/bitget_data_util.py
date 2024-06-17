@@ -348,7 +348,7 @@ class BitgetDataUtil:
                 ao = pandas_ta.ao(high = prices_history['High'].astype(float), low = prices_history['Low'].astype(float))
                 ao_numpy = numpy.array(ao)
                 ao_numpy = ao_numpy[~numpy.isnan(ao_numpy)]
-                #data_frame[DataFrameColum.AO.value][ind] = ao_numpy
+                data_frame[DataFrameColum.AO.value][ind] = ao_numpy
                 data_frame.loc[ind, DataFrameColum.AO_LAST.value] = self.get_last_element(element_list = ao_numpy ,previous_period = previous_period)
                 data_frame.loc[ind, DataFrameColum.AO_ASCENDING.value] =  self.list_is_ascending(check_list = ao_numpy, ascending_count = ascending_count, previous_period = previous_period)
 
@@ -648,6 +648,66 @@ class BitgetDataUtil:
                 continue
         
         return data_frame
+
+    def bbwp(self, prices_history_dict:dict=None, data_frame:pandas.DataFrame=pandas.DataFrame(), length=13, window=252, ascending_count:int = 2, previous_period:int = 0):
+        """
+        Calcula el indicador BBWP (Bollinger Band Width Percentile).
+
+        :param datos: DataFrame de pandas con una columna 'Close' (precios de cierre).
+        :param periodo: Periodo para las Bandas de Bollinger (por defecto 20).
+        :param ventana: Ventana para el cálculo del percentil (por defecto 252, equivalente a un año de trading).
+        :return: Serie de pandas con los valores BBWP.
+        """
+        if DataFrameColum.BBWP.value not in data_frame.columns:
+            data_frame[DataFrameColum.BBWP.value] = None
+
+        if DataFrameColum.BBWP_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.BBWP_LAST.value] = None
+
+        if DataFrameColum.BBWP.value not in data_frame.columns:
+            data_frame[DataFrameColum.BBWP.value] = None
+        
+        for ind in data_frame.index:
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+
+            try:
+                
+                prices_history = prices_history_dict[symbol]      
+
+                close = prices_history['Close'].astype(float)   
+
+                # Calcular las Bandas de Bollinger
+                bbands = pandas_ta.bbands(close=close, length=length)
+                # Calcular el ancho de las bandas
+                bb_width = (bbands['BBU_' + str(length) + '_2.0'] - bbands['BBL_' + str(length) + '_2.0']) / bbands['BBM_' + str(length) + '_2.0']
+
+                def percentileofscore(a, score):
+                    """
+                    Calcula el percentil de un valor dado en relación con un array.
+                    
+                    :param a: Array o Serie.
+                    :param score: Valor para el cual se quiere calcular el percentil.
+                    :return: Percentil (0-100).
+                    """
+                    a = numpy.asarray(a)
+                    n = len(a)
+
+                    return (numpy.sum(a < score) + 0.5 * numpy.sum(a == score)) / n * 100
+                
+                # Calcular el BBWP
+                bbwp = bb_width.rolling(window=window).apply(lambda x: percentileofscore(x, x.iloc[-1]))
+
+                bbwp_numpy = numpy.array(bbwp)
+                bbwp_numpy = bbwp_numpy[~numpy.isnan(bbwp_numpy)]
+
+                data_frame[DataFrameColum.BBWP.value][ind] = bbwp_numpy
+                data_frame.loc[ind, DataFrameColum.BBWP_LAST.value] = self.get_last_element(element_list = bbwp_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.BBWP_ASCENDING.value] = self.list_is_ascending(check_list = bbwp_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "BBWP", e)
+                continue
+        return data_frame 
 
 
     def update_percentage_profit(self, data_frame:pandas.DataFrame=pandas.DataFrame()) -> pandas.DataFrame:
