@@ -121,7 +121,7 @@ class Strategy:
 
         #! LONG - SIN CONFIRMACIÓN
 
-        query = "((" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " < 45) and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_ASCENDING.value + " == False))"
+        query = "((" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " < 45) and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_ASCENDING.value + " == True))"
         query = query + " and ((" + DataFrameColum.BBWP_LAST.value + " > 50))"
         query = query + " and (" + DataFrameColum.AO_ASCENDING.value + " == True)"
 
