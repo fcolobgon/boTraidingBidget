@@ -1,6 +1,7 @@
 import time
 import numpy
 import pandas_ta 
+import schedule
 
 from src.botrading.model.indocators import *
 from src.botrading.utils.bitget_data_util import BitgetDataUtil
@@ -45,26 +46,44 @@ class Strategy:
 
         time_range = TimeRanges("HOUR_2") #DAY_1  HOUR_4  MINUTES_1
 
+        """
+        # ----------------- CLASIFICACIÓN DE  COINS POR TIEMPO -----------------
+        # Actualizamos fecha de la siguiente ejecución
+        query = DataFrameColum.NOTE_3.value + " == '-'"
+        filtered_data_frame.loc[filtered_data_frame.query(query).index, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
+        filtered_data_frame[DataFrameColum.NOTE_3.value] = pandas.to_datetime(filtered_data_frame[DataFrameColum.NOTE_3.value], format='%d-%m-%Y %H:%M:%S')
+
+        filtered_data_frame = DataFrameUtil.unlocking_time_locked_crypto (data_frame = filtered_data_frame, time_column = DataFrameColum.NOTE_3.value)
+        # -----------------  CLASIFICACIÓN DE  COINS POR TIEMPO  -----------------
+        """
+
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
         filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
         filtered_data_frame = bitget_data_util.updating_rsi(length=14, data_frame=filtered_data_frame, prices_history_dict=prices_history)
+
+        config_stock_rsi = ConfigSTOCHrsi(longitud_stoch= 14, longitud_rsi= 14, smooth_k = 5, smooth_d = 5)
+        filtered_data_frame = bitget_data_util.updating_stochrsi(config_stoch_rsi = config_stock_rsi,data_frame=filtered_data_frame, prices_history_dict=prices_history)
+        #filtered_data_frame = binance_data_util.updating_stochrsi(config_stoch_rsi = config_stock_rsi, time_range = time_range, data_frame = filtered_data_frame, prices_history_dict = prices_history, ascending_count = rsi_ascending_count, previous_period=previous_period_rsi)
+
+
+        for ind in filtered_data_frame.index:
+
+            list_green = filtered_data_frame[DataFrameColum.KONCORDE_VERDE.value][ind]
+            filtered_data_frame.loc[ind,'media_kncrd_green'] = sum(list_green[-2:]) / 2
+
+            list_blue = filtered_data_frame[DataFrameColum.KONCORDE_AZUL.value][ind]
+            filtered_data_frame.loc[ind,'media_kncrd_blue']= sum(list_blue[-2:]) / 2
         
         #config_sma = ConfigMA(length=14, type="sma")
         #filtered_data_frame = bitget_data_util.updating_ma(config_ma = config_sma, data_frame=filtered_data_frame, prices_history_dict=prices_history)
 
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="kcd.xlsx")
         
-        """#! SHORT - CON CONFIRMACIÓN
-        query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        query = query + " and ((KONCORDE_MEDIA.str[-3] < KONCORDE_VERDE.str[-3]) or (KONCORDE_MEDIA.str[-3] < KONCORDE_AZUL.str[-3]))"
-        query = query + " and (" + DataFrameColum.RSI_LAST.value + " > 70)"
-        df_short = filtered_data_frame.query(query)
-        """
 
         #! SHORT - SIN CONFIRMACIÓN
         query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))" 
+        query = query + " and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " > 65)"
         df_short = filtered_data_frame.query(query)
                 
         if df_short.empty == False:
@@ -72,25 +91,16 @@ class Strategy:
             query = "((SMA.str[-2] > RSI.str[-2]) and (SMA.str[-1] > RSI.str[-1])) "
             df_short = df_short.query(query)
 
-        """#! LONG - CON CONFIRMACIÓN
-        query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        query = query + " and ((KONCORDE_MEDIA.str[-3] > KONCORDE_VERDE.str[-3]) and (KONCORDE_MEDIA.str[-3] > KONCORDE_AZUL.str[-3]))"
-        query = query + " and (" + DataFrameColum.RSI_LAST.value + " < 30)"
-        df_long = filtered_data_frame.query(query)
-        """
-
         #! LONG - SIN CONFIRMACIÓN
         query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
         query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+        query = query + " and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " < 35)"
         df_long = filtered_data_frame.query(query)
-        
         
         if df_long.empty == False:
             df_long = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_long)
             query = "((SMA.str[-2]) < (RSI.str[-2]) and (SMA.str[-1]) < (RSI.str[-1]))"
             df_long = df_long.query(query)
-
  
         #excel_util.save_data_frame( data_frame=df_long, exel_name="kcd_l.xlsx")
         #excel_util.save_data_frame( data_frame=df_short, exel_name="kcd_s.xlsx")
@@ -127,7 +137,8 @@ class Strategy:
 
         Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
 
-        value_limit_pctg = 8
+        value_limit_pctg = 7
+        value_minim_limit_pctg = 4.5
         Strategy.mark_price_exceeds_limit(data_frame = filtered_data_frame, value_limit= value_limit_pctg)
 
         time_range = TimeRanges("HOUR_2")  #DAY_1  HOUR_4  MINUTES_1
@@ -150,57 +161,78 @@ class Strategy:
 
         #! SHORT - SIN CONFIRMACIÓN
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        df_short = filtered_data_frame.query(query)
+        df_short_master = filtered_data_frame.query(query)
 
-        if df_short.empty == False:
-            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_short        
+        if df_short_master.empty == False:     
 
-        #! SHORT - UN SEGURO de VENTA
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        df_short = filtered_data_frame.query(query)
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+            df_short_opc_1 = df_short_master.query(query)
 
-        if df_short.empty == False:
-            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_short
+            if df_short_opc_1.empty == False:
+                df_short_opc_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_short_opc_1        
 
-        """ #! LONG - CON CONFIRMACIÓN
-        
+            #! SHORT - UN SEGURO de VENTA
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+            df_short_opc_2 = df_short_master.query(query)
+
+            if df_short_opc_2.empty == False:
+                df_short_opc_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_short_opc_2
+            
+            #! SHORT - SMA y RSI
+            if df_short_master.empty == False:
+                df_short_opc_3 = bitget_data_util.updating_rsi(length=14, data_frame=df_short_master, prices_history_dict=prices_history)
+                df_short_opc_3 = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_short_opc_3)
+                query = "((SMA.str[-2] < RSI.str[-2]) and (SMA.str[-1] < RSI.str[-1])) "
+                df_short_opc_3 = df_short_opc_3.query(query)
+
+                if df_short_opc_3.empty == False:
+                    df_short_opc_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                    return df_short_opc_3
+                
+        #-------------------------------------- LONG --------------------------------------
+
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        query = query + " and ((KONCORDE_MEDIA.str[-3] < KONCORDE_VERDE.str[-3]) or (KONCORDE_MEDIA.str[-3] < KONCORDE_AZUL.str[-3]))"
-        df_long = filtered_data_frame.query(query)
-        """
+        df_long_master = filtered_data_frame.query(query)
 
-        #! LONG - SIN CONFIRMACIÓN
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        df_long = filtered_data_frame.query(query)
+        if df_long_master.empty == False:
 
-        if df_long.empty == False:
-            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_long
+            #! LONG - SIN CONFIRMACIÓN
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+            df_long_opc_1 = df_long_master.query(query)
 
-        #! LONG - UN SEGURO de VENTAN
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        df_long = filtered_data_frame.query(query)
+            if df_long_opc_1.empty == False:
+                df_long_opc_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_long_opc_1
 
-        if df_long.empty == False:
-            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_long
-    
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+            df_long_opc_2 = df_long_master.query(query)
+
+            if df_long_opc_2.empty == False:
+                df_long_opc_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_long_opc_2
+
+            #! SHORT - SMA y RSI
+            if df_long_master.empty == False:
+                df_long_opc_3 = bitget_data_util.updating_rsi(length=14, data_frame=df_long_master, prices_history_dict=prices_history)
+                df_long_opc_3 = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_long_opc_3)
+                query = "((SMA.str[-2] > RSI.str[-2]) and (SMA.str[-1] > RSI.str[-1])) "
+                df_long_opc_3 = df_long_opc_3.query(query)
+
+                if df_long_opc_3.empty == False:
+                    df_long_opc_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                    return df_long_opc_3
+                
+
         """********************************************** OPCION 1 **********************************************
         Si tiene el valor headdress, es que ya ha superado el value_limit. Se vende en el momento que baja el value_limit """
 
-        query = "((" + DataFrameColum.ROE.value + " < " + str(value_limit_pctg) + ") and (" + DataFrameColum.LOOK.value + " == 'headdress!'))" 
+        query = "((" + DataFrameColum.ROE.value + " < " + str(value_minim_limit_pctg) + ") and (" + DataFrameColum.LOOK.value + " == 'headdress!'))" 
         df_op1 = filtered_data_frame.query(query)
 
         if df_op1.empty == False:
@@ -228,8 +260,13 @@ class Strategy:
 
         return filtered_data_frame
 
-
-
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    @staticmethod
+    def mark_price_exceeds_limit(data_frame: pandas.DataFrame, value_limit: float = 1) -> pandas.DataFrame:
+        """Marcamos las cons con el profit superior al limite marcado"""
+        data_frame.loc[data_frame[DataFrameColum.ROE.value] >= value_limit, DataFrameColum.LOOK.value] = 'headdress!'
+        return data_frame
+    
 
     def updating_rsi_sma(bitget_data_util: BitgetDataUtil, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), ascending_count:int = 2, previous_period:int = 0):
         
@@ -425,12 +462,16 @@ class Strategy:
         print (df_plot)
 
         return df_plot, media
-
+    
     @staticmethod
-    def mark_price_exceeds_limit(data_frame: pandas.DataFrame, value_limit: float = 1) -> pandas.DataFrame:
-        """Marcamos las cons con el profit superior al limite marcado"""
-        data_frame.loc[data_frame[DataFrameColum.ROE.value] >= value_limit, DataFrameColum.LOOK.value] = 'headdress!'
-        return data_frame
+    def next_hour(hours: int = 1):
+        now = datetime.now()
+        start_time = now.replace(hour=2, minute=0, second=0, microsecond=0)
+        time_difference = now - start_time
+        tiempo_restante = timedelta(hours=hours) - (time_difference % timedelta(hours=hours))
+        fecha_proximo_periodo = now + tiempo_restante
+
+        return (fecha_proximo_periodo)
 
     @staticmethod
     def print_data_frame(message: str, data_frame: pandas.DataFrame):
@@ -442,8 +483,8 @@ class Strategy:
                 data_frame[[DataFrameColum.SYMBOL.value,
                             DataFrameColum.SIDE_TYPE.value,
                             DataFrameColum.ROE.value, 
+                            DataFrameColum.PNL.value, 
                             DataFrameColum.STOP_LOSS.value,
-                            DataFrameColum.PNL.value,
                             DataFrameColum.LOOK.value
                             ]])
             print("#####################################################################################################################")
