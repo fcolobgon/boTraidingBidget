@@ -1,29 +1,26 @@
 from multiprocessing.connection import wait
 import platform
 import pandas
+from pybitget import Client
 from datetime import datetime, timedelta
 from datetime import datetime
 
 from tenacity import retry, stop_after_attempt, stop_after_delay
 from pybitget import Client
-
+from src.botrading.constants import botrading_constant
 
 
 class BitgetClienManager:
 
     retry_delay = 60
     retry_delay_attempt = 5
-    client_bit: Client
+    client: Client
     buy_sell: bool
 
     # OJO! NO TOCAR ESTE CONSTRUCTOR
-    def __init__(self, test_mode: bool = True, api_key:str = "", api_secret:str = "", api_passphrase:str = ""):
+    def __init__(self):
 
-        if test_mode:
-            self.buy_sell = False
-        else:
-            self.buy_sell = True
-        self.client_bit = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=False)
+        self.client = Client(api_key=botrading_constant.API_KEY_BIT, api_secret_key=botrading_constant.API_SECRET_BIT, passphrase=botrading_constant.API_PASSPHRASE_BIT,use_server_time=False)
 
         # Check OS
         my_os = platform.system()
@@ -39,7 +36,7 @@ class BitgetClienManager:
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
     def get_all_coins_filter_contract(self, productType):
 
-        dict_symbol_inf = self.client_bit.mix_get_symbols_info(productType = productType )['data']
+        dict_symbol_inf = self.client.mix_get_symbols_info(productType = productType )['data']
         df_symbol_inf = pandas.DataFrame(dict_symbol_inf)
 
         return df_symbol_inf
@@ -55,7 +52,7 @@ class BitgetClienManager:
         startTime_ms = int(startTime.timestamp() * 1000)
         endTime_ms = int(endTime.timestamp() * 1000)
 
-        temp_data = self.client_bit.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market', limit=limit)
+        temp_data = self.client.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market', limit=limit)
             
         df_history_symbol = pandas.DataFrame(
             temp_data,
@@ -84,12 +81,12 @@ class BitgetClienManager:
         Returns:
             float: Precio actual de la moneda en formato FLOAT
         """
-        return float(self.client_bit.mix_get_market_price(symbol=symbol)["data"]["markPrice"])
+        return float(self.client.mix_get_market_price(symbol=symbol)["data"]["markPrice"])
     
     @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
     def get_open_orders(self, marginCoin, productType) -> pandas.DataFrame:
     
-        data = self.client_bit.mix_get_all_positions(marginCoin=marginCoin,productType=productType)
+        data = self.client.mix_get_all_positions(marginCoin=marginCoin,productType=productType)
         
         orders = data["data"]
         
@@ -105,7 +102,7 @@ class BitgetClienManager:
         
         productType = productType.upper()
         
-        data = self.client_bit.mix_get_productType_history_orders(productType=productType, startTime=startTime_ms, endTime=endTime_ms, pageSize=100)
+        data = self.client.mix_get_productType_history_orders(productType=productType, startTime=startTime_ms, endTime=endTime_ms, pageSize=100)
         dataOrder = data["data"]
         orders = dataOrder["orderList"]
         
@@ -114,17 +111,6 @@ class BitgetClienManager:
                 
         return pandas.DataFrame(orders)
     
-    @retry(stop=(stop_after_delay(retry_delay) | stop_after_attempt(retry_delay_attempt)))
-    def get_open_positions(self, productType:str) -> pandas.DataFrame:
-                
-        productType = productType.upper()
-        
-        data = self.client_bit.mix_get_all_positions(productType=productType)
-        positions = data["data"]
-        
-        if not positions:
-            return pandas.DataFrame()
-                
-        return pandas.DataFrame(positions)
+
     
 

@@ -1,181 +1,121 @@
-
-from datetime import datetime
 import pandas
-import numpy
+from pybitget import Client
 from binance import helpers
+from datetime import datetime
+from datetime import timedelta
 
 from src.botrading.bit import BitgetClienManager
 from src.botrading.constants import botrading_constant
-from src.botrading.utils import excel_util
-from src.botrading.utils.enums.data_frame_colum import DataFrameColum
-from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 from src.botrading.utils.price_util import PriceUtil
-import math
 
-from configs.config import settings as settings
-
-def get_open_orders(clnt_bit: BitgetClienManager, startTime:datetime) -> pandas.DataFrame:
+def get_history(clnt_bit: Client, symbol, interval):
     
-    productType = settings.FUTURE_CONTRACT
+    kLineType='market'
+    limit=1000
     
-    if settings.BITGET_CLIENT_TEST_MODE == True:
-        productType = 'S' + settings.FUTURE_CONTRACT
-
-    orders = clnt_bit.get_orders_history(productType=productType, startTime=startTime)
-
-    return orders
-
-def get_open_positions(clnt_bit: BitgetClienManager) -> pandas.DataFrame:
+    endTime = datetime.now()
+    startTime = endTime - timedelta(days=100)
+    startTime_ms = int(startTime.timestamp() * 1000)
+    endTime_ms = int(endTime.timestamp() * 1000)
     
-    productType = settings.FUTURE_CONTRACT
+    candels = clnt_bit.mix_get_candles(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType=kLineType, limit=limit)
     
-    if settings.BITGET_CLIENT_TEST_MODE == True:
-        productType = 'S' + settings.FUTURE_CONTRACT
-
-    positions = clnt_bit.get_open_positions(productType=productType)
-
-    return positions
+    data = pandas.DataFrame(
+        candels,
+        columns=[
+            "Open Time",
+            "Open",
+            "High", 
+            "Low",
+            "Close",
+            "Volume",
+            "Close time"])
     
-"""_summary_
-    sideType: short o long
-"""
-def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
+    data['Open'] = data['Open'].astype(float)
+    data['High'] = data['High'].astype(float)
+    data['Low'] = data['Low'].astype(float)
+    data['Close'] = data['Close'].astype(float)
+    data['Volume'] = data['Volume'].astype(float)
+    return data
+    
 
-    for ind in df_buy.index:
-        symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]        
-        sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
-        levereage = int(df_buy.loc[ind,DataFrameColum.LEVEREAGE.value])
-        percentage_profit_flag = df_buy.loc[ind,DataFrameColum.PERCENTAGE_PROFIT_FLAG.value]
-        takeProfit = df_buy.loc[ind,DataFrameColum.TAKE_PROFIT.value]
-        stopLoss = df_buy.loc[ind,DataFrameColum.STOP_LOSS.value]
-        margin_coin = settings.MARGINCOIN
-        price_place = int(df_buy.loc[ind,DataFrameColum.PRICEPLACE.value])
-        price_end_step = int(df_buy.loc[ind,DataFrameColum.PRICEENDSTEP.value])
-        volume_place = int(df_buy.loc[ind,DataFrameColum.VOLUMEPLACE.value])
+def get_open_positions(clnt_bit: Client):
+    
+    productType = botrading_constant.FUTURE_CONTRACT_USDT_UMCBL
+    marginCoin = botrading_constant.MARIN_COIN
+    data = clnt_bit.mix_get_all_positions(marginCoin=marginCoin,productType=productType)
 
-        try:
-            size, price_coin_buy = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
-            formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
-            #Solo se ejecuta en para modo TEST
-            if settings.BITGET_CLIENT_TEST_MODE == True:
-                margin_coin = 'S' + settings.MARGINCOIN
-                baseCoin = 'S' +  df_buy.loc[ind,DataFrameColum.BASE.value]
-                mode = 'S' + settings.FUTURE_CONTRACT
-                symbol = baseCoin + margin_coin + "_" + mode
+    return data["data"]
 
-            symbol = str(symbol).upper()
-            print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
+def logic_buy(clnt_bit:Client, symbol, sideType, quantity_usdt, levereage, takeProfit, stopLoss, price_place, price_end_step, volume_place):
+
+    margin_coin = botrading_constant.MARIN_COIN
+        
+    try:
+        size, price_coin_buy = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
+        formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
+
+        symbol = str(symbol).upper()
+        print("------------------- INICIO COMPRA " + str(symbol) + "-------------------")
             
-            if int(levereage) > 0:
+        if int(levereage) > 0:
 
-                try:
-                    clnt_bit.client_bit.mix_adjust_margintype(symbol=symbol, marginCoin=margin_coin, marginMode=settings.MARGIN_MODE)
-                    order_leverage = clnt_bit.client_bit.mix_adjust_leverage(symbol=symbol, marginCoin=margin_coin, leverage=levereage, holdSide=sideType) 
-                    print(order_leverage)
-                except Exception as e:
-                    print(f"Error al realizar apalancamiento {symbol}: {e}")
-                    #continue
+            try:
+                clnt_bit.mix_adjust_margintype(symbol=symbol, marginCoin=margin_coin, marginMode=botrading_constant.MARGIN_MODE)
+                order_leverage = clnt_bit.mix_adjust_leverage(symbol=symbol, marginCoin=margin_coin, leverage=levereage, holdSide=sideType) 
+                print(order_leverage)
+            except Exception as e:
+                print(f"Error al realizar apalancamiento {symbol}: {e}")
+                #continue
+
+        print ('symbol: ' + str(symbol))
+        print ('marginCoin: ' + str(margin_coin))
+        print ('size: ' + str(formatted_price))
+        print ('sideType: ' + str(sideType))
         
-            if percentage_profit_flag:
-                print ('--------------------------------------------------------------')
-                print ('price_place: ' + str(price_place))
-                print ('price_end_step: ' + str(price_end_step))
-                print ('volume_place: ' + str(volume_place))
-                print ('--------------------------------------------------------------')
-                            
-                print ('price_coin_buy: ' + str(price_coin_buy))
-                print ('symbol: ' + str(symbol))
-                print ('marginCoin: ' + str(margin_coin))
-                print ('size: ' + str(formatted_price))
-                print ('sideType: ' + str(sideType))
-                print ('takeProfit: ' + str(takeProfit))
-                print ('stopLoss: ' + str(stopLoss))
+        if takeProfit and stopLoss:
+            takeProfit = PriceUtil.multiple_next_limit (takeProfit, price_place, price_end_step)
+            stopLoss = PriceUtil.multiple_next_limit (stopLoss, price_place, price_end_step)
+            print ('takeProfit: ' + str(takeProfit))
+            print ('stopLoss: ' + str(stopLoss))
+            order = clnt_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+        else:
+            order = clnt_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market') 
                 
+        if order['msg'] == 'success':
+            print(order)
+            return order['data']
+        else:
+            print("------------------- ERROR AL COMPRAR "   + str(symbol) + "-------------------")
 
-                takeProfit = PriceUtil.multiple_next_limit (takeProfit, price_place, price_end_step)
-                stopLoss = PriceUtil.multiple_next_limit (stopLoss, price_place, price_end_step)
-
-                print ('symbol: ' + str(symbol))
-                print ('marginCoin: ' + str(margin_coin))
-                print ('size: ' + str(formatted_price))
-                print ('sideType: ' + str(sideType))
-                print ('takeProfit: ' + str(takeProfit))
-                print ('stopLoss: ' + str(stopLoss))
-
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
-            else:
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market') 
-                
-            if order['msg'] == 'success':
-                print(order)
-                orderInfo = order['data']
-                df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.BUY.value
-                df_buy.loc[ind,DataFrameColum.MONEY_SPENT.value] = quantity_usdt   
-                df_buy.loc[ind,DataFrameColum.PRICE_BUY.value] = price_coin_buy
-                df_buy.loc[ind,DataFrameColum.ORDER_OPEN.value] = True
-                df_buy.loc[ind,DataFrameColum.ORDER_ID.value] = orderInfo['orderId']
-                df_buy.loc[ind,DataFrameColum.CLIENT_ORDER_ID.value] = orderInfo['clientOid'] #! clientOrderId
-                df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
-            else:
-                print("------------------- ERRO AL COMPRAR "   + str(symbol) + "-------------------")
-
-        except Exception as e:
-            print(f"Error al realizar la orden de compra para {symbol}: {e}")
-            df_buy.loc[ind,DataFrameColum.STATE.value] = ColumStateValues.ERR_BUY.value
-            df_buy.loc[ind,DataFrameColum.ERROR.value] = e
-            df_buy.loc[ind,DataFrameColum.PRICE_BUY.value] = price_coin_buy
-            df_buy.loc[ind,DataFrameColum.DATE.value] = datetime.now()
-
-            print(f"------------------- ERROR AL COMPRAR {symbol} -------------------")
-            continue  # Continuar con la próxima iteración del bucle sin detenerse
-
-    excel_util.save_buy_file(df_buy)
+    except Exception as e:
+        print(f"Error al realizar la orden de compra para {symbol}: {e}")
+        print(f"------------------- ERROR AL COMPRAR {symbol} -------------------")
         
-    return df_buy
+    return None
 
 
-def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas.DataFrame:
+def logic_sell(clnt_bit: Client, symbol, sideType, levereage, price_place, price_end_step, volume_place) -> pandas.DataFrame:
 
     print("------------------- INICIO VENTA  -------------------")
 
-    for ind in df_sell.index:
+    quantity_usdt=None #Calcular???
+    margin_coin = botrading_constant.MARIN_COIN
 
-        symbol = df_sell.loc[ind,DataFrameColum.SYMBOL.value]        
-        sideType = str(df_sell.loc[ind, DataFrameColum.SIDE_TYPE.value])
-        levereage = int(df_sell.loc[ind,DataFrameColum.LEVEREAGE.value])
-        quantity_usdt = int(df_sell.loc[ind,DataFrameColum.MONEY_SPENT.value])
-        margin_coin = settings.MARGINCOIN
-        price_place = int(df_sell.loc[ind,DataFrameColum.PRICEPLACE.value])
-        price_end_step = int(df_sell.loc[ind,DataFrameColum.PRICEENDSTEP.value])
-        volume_place = int(df_sell.loc[ind,DataFrameColum.VOLUMEPLACE.value])
-
-        size, price_coin_sell = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
-        formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
-
-        #Solo se ejecuta en para modo TEST
-        if settings.BITGET_CLIENT_TEST_MODE == True:
-            margin_coin = 'S' + settings.MARGINCOIN
-            baseCoin = 'S' +  df_sell.loc[ind,DataFrameColum.BASE.value]
-            mode = 'S' + settings.FUTURE_CONTRACT
-            symbol = baseCoin + margin_coin + "_" + mode
+    size, price_coin_sell = PriceUtil.calculate_size_with_leverage(clnt_bit=clnt_bit, symbol = symbol, quantity_usdt = quantity_usdt, volume_place= volume_place, leverage = int(levereage))
+    formatted_price = PriceUtil.multiple_next_price (value = size, price_place = price_place, price_end_step = price_end_step , volume_place = volume_place) #! BORRAR son PRUEBAS
                         
-        symbol = str(symbol).upper()
+    symbol = str(symbol).upper()
         
-        order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'close_' + sideType, orderType = 'market') 
+    order = clnt_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'close_' + sideType, orderType = 'market') 
 
-        if order['msg'] == 'success':
-            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.SELL.value
-            df_sell[DataFrameColum.ORDER_OPEN.value] = False
-            df_sell[DataFrameColum.ORDER_ID.value] = "-"
-            df_sell[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
-            df_sell[DataFrameColum.PRICE_SELL.value] = price_coin_sell
+    if order['msg'] == 'success':
+       print(order)
 
-        else:
-            df_sell[DataFrameColum.STATE.value][ind] = ColumStateValues.ERR_SELL.value
+    else:
+        print("------------------- ERROR AL VENDER "   + str(symbol) + "-------------------")
 
-    excel_util.save_sell_file(df_sell)
-
-    return df_sell
+    return None
 
 
 class TradingUtil:
