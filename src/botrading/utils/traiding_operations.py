@@ -1,6 +1,5 @@
 import pandas
 from pybitget import Client
-from binance import helpers
 from datetime import datetime
 from datetime import timedelta
 
@@ -157,37 +156,11 @@ class TradingUtil:
 
             if order['msg'] == 'success':
                 return order
-
-            #qty_diff = TradingUtil.diff_precision_decimal(qty)
-            #qty = TradingUtil.format_qty_for_sell(clnt_bit, symbol + base_asset, price, qty_diff)
             cont += 1
 
         print("LA VENTA NO SE HA PODIDO REALIZAR PARA " + str(symbol))
 
         return None
-
-    @staticmethod
-    def format_qty_for_sell(clnt_bit: BitgetClienManager, symbol, price, qty: float):
-
-        coin_inf = clnt_bit.get_inf_coin(symbol)
-
-        for filter in coin_inf.filters:
-            if filter.filterType == "LOT_SIZE":
-                step_size = float(filter.stepSize)
-                min_qty = float(filter.minQty)
-            if filter.filterType == "MIN_NOTIONAL":
-                min_notional = float(filter.minNotional)
-            if filter.filterType == "NOTIONAL":
-                min_notional = float(filter.minNotional)
-
-        if qty < min_qty:
-            qty = min_qty
-
-        if price * qty < min_notional:
-            qty = min_notional / price
-
-        return helpers.round_step_size(qty, step_size)
-
 
     @staticmethod
     def extract_whole_part(number):
