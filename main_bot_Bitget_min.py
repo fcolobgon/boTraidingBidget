@@ -3,7 +3,7 @@ from src.botrading.strategy import Strategy
 from pybitget import Client
 from src.botrading.constants import botrading_constant
 from src.botrading.telegram.telegram_notify import TelegramNotify
-
+from src.botrading.utils.price_util import PriceUtil
 # ----------------------------  MAIN  -----------------------------
 
 if __name__ == '__main__':
@@ -14,8 +14,8 @@ if __name__ == '__main__':
     print("### START MAIN ###")
     buy_quantity=80
     levereage=10
-    takeProfit=None
-    stopLoss=None
+    takeProfit=1.4
+    stopLoss=90
     productType = botrading_constant.FUTURE_CONTRACT_USDT_UMCBL
     
     limit=1000
@@ -41,54 +41,64 @@ if __name__ == '__main__':
                     symbol = coin['symbol']
                     print("Calculando " + str(baseCoin))
                     
-                    
                     #candels = bitget_client.get_history(symbol=symbol, startTime=startTime_ms, endTime=endTime_ms, granularity=interval, kLineType='market', limit=limit)
                     candels = traiding_operations.get_history(clnt_bit=bitget_client, symbol=symbol, interval=interval)
                     
                     long, buy = strategy.buy(candels)
                     
                 except Exception as e:
-                    print("Error ejecutando calculos")
+                    print("Error ejecutando calculos " + str(baseCoin))
                     print(e)
+                    TelegramNotify.notify("Error ejecutando calculos " + str(baseCoin))
+                    TelegramNotify.notify(str(e))
                     all_coin = [coin for coin in all_coin if coin.get('symbol') != symbol]
 
                     continue
                 
-        if buy:
+                if buy:
+                    
+                    close = candels['Close']
+                    actual_price = close.iloc[-1]
             
-            if long:
-                sideType = "long"
-            else:
-                sideType = "short"
+                    if long:
+                        sideType = "long"
+                        if takeProfit and stopLoss:
+                            takeProfit = PriceUtil.minus_percentage_price(price=actual_price, percentage=takeProfit)
+                            stopLoss = PriceUtil.plus_percentage_price(price=actual_price, percentage=stopLoss)
+                    else:
+                        sideType = "short"
+                        if takeProfit and stopLoss:
+                            takeProfit = PriceUtil.plus_percentage_price(price=actual_price, percentage=takeProfit)
+                            stopLoss = PriceUtil.minus_percentage_price(price=actual_price, percentage=stopLoss)
                             
-            price_place  = coin['pricePlace']
-            price_end_stepe  = coin['priceEndStep'] 
-            volume_placee  = coin['volumePlace']
+                    price_place  = coin['pricePlace']
+                    price_end_stepe  = coin['priceEndStep'] 
+                    volume_placee  = coin['volumePlace']
             
-            compra_msg = "Comprar " +str(symbol) + " en " + str(sideType)
-            print(compra_msg)
-            TelegramNotify.notify(compra_msg)
-            order = traiding_operations.logic_buy(clnt_bit=bitget_client, 
-                                          symbol=symbol, 
-                                          sideType=sideType,
-                                          quantity_usdt=buy_quantity,
-                                          levereage=levereage,
-                                          takeProfit=takeProfit,
-                                          stopLoss=stopLoss
-                                          )
-            print("ORDEN DE COMPRA")
-            print(order)
+                    compra_msg = "Comprar " +str(symbol) + " en " + str(sideType)
+                    print(compra_msg)
+                    TelegramNotify.notify(compra_msg)
+                    order = traiding_operations.logic_buy(clnt_bit=bitget_client, 
+                                                        symbol=symbol, 
+                                                        sideType=sideType,
+                                                        quantity_usdt=buy_quantity,
+                                                        levereage=levereage,
+                                                        takeProfit=takeProfit,
+                                                        stopLoss=stopLoss
+                                                        )
+                    print("ORDEN DE COMPRA")
+                    print(order)
             
-            while buy:
+                while buy:
                 
-                positions = traiding_operations.get_open_positions(clnt_bit=bitget_client)
+                    positions = traiding_operations.get_open_positions(clnt_bit=bitget_client)
                 
-                print("POSICIONES ABIERTAS")
-                print(positions)
+                    print("POSICIONES ABIERTAS")
+                    print(positions)
                 
-                if not positions:
-                    TelegramNotify.notify("Venta realizada")
-                    buy = False
+                    if not positions:
+                        TelegramNotify.notify("Venta realizada")
+                        buy = False
             
         
 

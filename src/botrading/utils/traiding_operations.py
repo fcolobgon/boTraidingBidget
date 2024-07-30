@@ -7,6 +7,7 @@ from datetime import timedelta
 from src.botrading.bit import BitgetClienManager
 from src.botrading.constants import botrading_constant
 from src.botrading.utils.price_util import PriceUtil
+from src.botrading.telegram.telegram_notify import TelegramNotify
 
 def get_history(clnt_bit: Client, symbol, interval):
     
@@ -91,7 +92,8 @@ def logic_buy(clnt_bit:Client, symbol, sideType, quantity_usdt, levereage, takeP
     except Exception as e:
         print(f"Error al realizar la orden de compra para {symbol}: {e}")
         print(f"------------------- ERROR AL COMPRAR {symbol} -------------------")
-        
+        TelegramNotify.notify(f"Error al realizar la orden de compra para {symbol}: {e}")
+                    
     return None
 
 
