@@ -216,3 +216,4 @@ cython_debug/
 /.vscode/launch.json
 /configs/settings.toml
 /src/botrading/constants/botrading_constant.py
+/src/botrading/constants/botrading_constant.py

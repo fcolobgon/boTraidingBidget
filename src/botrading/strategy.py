@@ -56,15 +56,20 @@ class Strategy:
                     long = False
                                 
                 ao = numpy.array(pandas_ta.ao(high = prices_high, low = prices_low))
-                            
+                           
+                ao_3 = ao[-3] 
                 ao_2 = ao[-2]
                 ao_1 = ao[-1]
                             
                 if long:
                     if ao_2 < 0 and ao_1 > 0 and adx_1 > self.adx_min:
-                          buy = True
+                        buy = True
+                    elif ao_2 < 0 and ao_1 > 0 and ao_3 > 0 and adx_1 > self.adx_min:
+                        buy = True
                 else:
                     if ao_2 > 0 and ao_1 < 0 and adx_1 > self.adx_min:
+                        buy = True
+                    elif ao_2 > 0 and ao_1 < 0 and ao_3 < 0 and adx_1 > self.adx_min:
                         buy = True
 
         return long, buy
