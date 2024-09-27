@@ -85,7 +85,7 @@ class BitgetBuyThreed(threading.Thread):
             self.lock_buy_thread()
 
             # Verificar columnas diferentes
-            columnas_nuevas = set(update_data_frame.columns) - set(self.data_frame.columns)
+            columnas_nuevas = list(set(update_data_frame.columns) - set(self.data_frame.columns))
 
             # Añadir columnas nuevas al DataFrame master basándonos en el índice
             self.data_frame = pandas.concat([self.data_frame, update_data_frame[columnas_nuevas]], axis=1)
