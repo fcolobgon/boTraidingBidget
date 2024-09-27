@@ -64,7 +64,7 @@ class Strategy:
         
         if df_long_step_1.empty == False:
             df_long_step_1.loc[:, DataFrameColum.NOTE.value] = "CHECK_LNG"
-            df_long_step_1.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour_up(hours = hours_window_check)
+            df_long_step_1.loc[:, DataFrameColum.NOTE_3.value] = Strategy.sum_hour(hours = hours_window_check)
             
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_step_1)
 
@@ -94,7 +94,7 @@ class Strategy:
         
         if df_short_step_1.empty == False:
             df_short_step_1.loc[:, DataFrameColum.NOTE.value] = "CHECK_SHRT"
-            df_short_step_1.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour_up(hours = hours_window_check)
+            df_short_step_1.loc[:, DataFrameColum.NOTE_3.value] = Strategy.sum_hour(hours = hours_window_check)
 
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_step_1)
 
@@ -265,6 +265,21 @@ class Strategy:
         
         return data_frame
     
+    def sum_hour(hours: int = 1):
+        """
+        Devuelve la hora futura ajustada, sumando un número de horas al momento actual.
+        
+        :param hours: Número de horas a sumar. Por defecto es 1.
+        :return: Fecha y hora ajustada con la suma de las horas indicadas.
+        """
+        now = datetime.now()  # Obtenemos la hora actual
+        fecha_proximo_periodo = now + timedelta(hours=hours)  # Sumamos las horas
+
+        return fecha_proximo_periodo
+
+
+
+
     @staticmethod
     def next_hour_up(hours: int = 1):
         now = datetime.now()
