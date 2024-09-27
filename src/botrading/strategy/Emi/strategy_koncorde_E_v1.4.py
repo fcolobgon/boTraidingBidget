@@ -1,6 +1,7 @@
 import time
 import numpy
 import pandas_ta 
+import schedule
 
 from src.botrading.model.indocators import *
 from src.botrading.utils.bitget_data_util import BitgetDataUtil
@@ -9,15 +10,18 @@ from src.botrading.utils import koncorde
 from src.botrading.model.time_ranges import *
 from src.botrading.utils.rules_util import RuleUtils
 from src.botrading.utils.dataframe_util import DataFrameUtil
+from src.botrading.utils.dataframe_check_util import DataFrameCheckUtil
 from src.botrading.utils.enums.data_frame_colum import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
-from src.botrading.utils.math_calc_util import MathCal_util
+from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
 from src.botrading.utils.enums.future_values import FutureValues
+from src.botrading.telegram.telegram_notify import TelegramNotify
+from src.botrading.utils.price_util import PriceUtil
 from src.botrading.utils import excel_util
 from datetime import datetime, timedelta
-import math
 
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 from configs.config import settings as settings
 
@@ -40,104 +44,82 @@ class Strategy:
 
         filtered_df_master = filtered_data_frame
 
-        time_range = TimeRanges("HOUR_1") #DAY_1  HOUR_4  MINUTES_1
+        time_range = TimeRanges("HOUR_2") #DAY_1  HOUR_4  MINUTES_1
 
-        filtered_data_frame[DataFrameColum.NOTE.value] = 0.0
-        filtered_data_frame[DataFrameColum.NOTE.value] = filtered_data_frame[DataFrameColum.NOTE.value].astype(float)
-
+        """
         # ----------------- CLASIFICACIÓN DE  COINS POR TIEMPO -----------------
         # Actualizamos fecha de la siguiente ejecución
-        formatted_now = datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-        filtered_data_frame.loc[data_frame[DataFrameColum.NOTE_3.value] == '-', DataFrameColum.NOTE_3.value] = datetime.strptime(formatted_now, '%d-%m-%Y %H:%M:%S')
-        #formato de fecha
+        query = DataFrameColum.NOTE_3.value + " == '-'"
+        filtered_data_frame.loc[filtered_data_frame.query(query).index, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
         filtered_data_frame[DataFrameColum.NOTE_3.value] = pandas.to_datetime(filtered_data_frame[DataFrameColum.NOTE_3.value], format='%d-%m-%Y %H:%M:%S')
-        # Desbloquear las monedas por tiempo
-        filtered_data_frame = DataFrameUtil.unlocking_time_locked_crypto (data_frame = filtered_data_frame, time_column = DataFrameColum.NOTE_3.value)
 
+        filtered_data_frame = DataFrameUtil.unlocking_time_locked_crypto (data_frame = filtered_data_frame, time_column = DataFrameColum.NOTE_3.value)
         # -----------------  CLASIFICACIÓN DE  COINS POR TIEMPO  -----------------
+        """
 
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
-
-        #ADX
-        ascending_count = 2
-        config_adx = ConfigADX(series= 14)
-        filtered_data_frame = bitget_data_util.updating_adx(config_adx=config_adx, data_frame = filtered_data_frame, prices_history_dict = prices_history, ascending_count = ascending_count)
-
-        # AO
-        ascending_count = 2
-        filtered_data_frame = bitget_data_util.updating_ao(data_frame = filtered_data_frame, prices_history_dict = prices_history, ascending_count = ascending_count)
-
-        # KNCRD
         filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
-
-        # RSI
         filtered_data_frame = bitget_data_util.updating_rsi(length=14, data_frame=filtered_data_frame, prices_history_dict=prices_history)
 
-        # Bucle for en sentido inverso usando range()
-        for positions_back in range(0, -3, -1):
-
-            bkp_df = filtered_data_frame
-
-            #df_bkp = Strategy.seach_v (filtered_data_frame=df_bkp, column_result_angle = DataFrameColum.NOTE.value, positions_back = positions_back)
-            bkp_df = Strategy.angle (filtered_data_frame=bkp_df, column_origin = DataFrameColum.ADX.value, column_destination = DataFrameColum.NOTE.value, positions_back = positions_back)
-
-            #excel_util.save_data_frame( data_frame=bkp_df, exel_name="df_bkp_" + str(abs(positions_back)) + "_.xlsx")
-
-            #! SHORT - SIN CONFIRMACIÓN
-
-            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-            query = query + " and ((" + DataFrameColum.AO_ASCENDING.value + " == False) and (" + DataFrameColum.AO_LAST.value + " > 0))"
-            query = query + " and ((" + DataFrameColum.ADX_LAST.value + " > 25))"
-            query = query + " and ((" + DataFrameColum.NOTE.value + " > -100) and (" + DataFrameColum.NOTE.value + " < -70))"
-            df_short = bkp_df.query(query)
-
-            """
-            if df_short.empty == False:
-                df_short.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
-                df_short.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
-                df_short.loc[:, DataFrameColum.LEVEREAGE.value] = 1
-                df_short.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-                filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short)
-            """
-
-            #! LONG - SIN CONFIRMACIÓN
-            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-            query = query + " and ((" + DataFrameColum.AO_ASCENDING.value + " == True) and (" + DataFrameColum.AO_LAST.value + " > 0))"
-            query = query + " and ((" + DataFrameColum.ADX_LAST.value + " > 25))"
-            query = query + " and ((" + DataFrameColum.NOTE.value + " < 100) and (" + DataFrameColum.NOTE.value + " > 70))"
-            df_long = bkp_df.query(query)
-
-            if df_long.empty == False:
-                df_long.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                df_long.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
-                df_long.loc[:, DataFrameColum.LEVEREAGE.value] = 1
-                df_long.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-                filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long)
-
-            #! LONG - SIN CONFIRMACIÓN
-            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-            query = query + " and ((" + DataFrameColum.AO_ASCENDING.value + " == True) and (" + DataFrameColum.AO_LAST.value + " < 0))"
-            query = query + " and ((" + DataFrameColum.ADX_LAST.value + " > 25))"
-            query = query + " and ((" + DataFrameColum.NOTE.value + " > -100) and (" + DataFrameColum.NOTE.value + " < -70))"
-            df_long_1 = bkp_df.query(query)
-
-            if df_long_1.empty == False:
-                df_long_1.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
-                df_long_1.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
-                df_long_1.loc[:, DataFrameColum.LEVEREAGE.value] = 1
-                df_long_1.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
-
-                filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_1)
+        config_stock_rsi = ConfigSTOCHrsi(longitud_stoch= 14, longitud_rsi= 14, smooth_k = 5, smooth_d = 5)
+        filtered_data_frame = bitget_data_util.updating_stochrsi(config_stoch_rsi = config_stock_rsi,data_frame=filtered_data_frame, prices_history_dict=prices_history)
+        #filtered_data_frame = binance_data_util.updating_stochrsi(config_stoch_rsi = config_stock_rsi, time_range = time_range, data_frame = filtered_data_frame, prices_history_dict = prices_history, ascending_count = rsi_ascending_count, previous_period=previous_period_rsi)
 
 
-            filtered_df_master = filtered_df_master.sort_values(by=DataFrameColum.NOTE.value, ascending=True)
+        for ind in filtered_data_frame.index:
 
-            # Contar cuántos "READY_FOR_BUY"
-            count_BUY = filtered_df_master[DataFrameColum.STATE.value].value_counts().get(ColumStateValues.READY_FOR_BUY.value, 0)
-            if count_BUY >= int(settings.MAX_COIN_BUY):
-                break
+            list_green = filtered_data_frame[DataFrameColum.KONCORDE_VERDE.value][ind]
+            filtered_data_frame.loc[ind,'media_kncrd_green'] = sum(list_green[-2:]) / 2
+
+            list_blue = filtered_data_frame[DataFrameColum.KONCORDE_AZUL.value][ind]
+            filtered_data_frame.loc[ind,'media_kncrd_blue']= sum(list_blue[-2:]) / 2
+        
+        #config_sma = ConfigMA(length=14, type="sma")
+        #filtered_data_frame = bitget_data_util.updating_ma(config_ma = config_sma, data_frame=filtered_data_frame, prices_history_dict=prices_history)
+
+        #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="kcd.xlsx")
+        
+
+        #! SHORT - SIN CONFIRMACIÓN
+        query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))" 
+        query = query + " and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " > 65)"
+        df_short = filtered_data_frame.query(query)
+                
+        if df_short.empty == False:
+            df_short = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_short)
+            query = "((SMA.str[-2] > RSI.str[-2]) and (SMA.str[-1] > RSI.str[-1])) "
+            df_short = df_short.query(query)
+
+        #! LONG - SIN CONFIRMACIÓN
+        query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+        query = query + " and (" + DataFrameColum.RSI_STOCH_GOOD_LINE_LAST.value + " < 35)"
+        df_long = filtered_data_frame.query(query)
+        
+        if df_long.empty == False:
+            df_long = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_long)
+            query = "((SMA.str[-2]) < (RSI.str[-2]) and (SMA.str[-1]) < (RSI.str[-1]))"
+            df_long = df_long.query(query)
+ 
+        #excel_util.save_data_frame( data_frame=df_long, exel_name="kcd_l.xlsx")
+        #excel_util.save_data_frame( data_frame=df_short, exel_name="kcd_s.xlsx")
+
+        if df_short.empty == False:
+            df_short.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+            df_short.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
+            df_short.loc[:, DataFrameColum.LEVEREAGE.value] = 10
+            df_short.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short)
+
+        if df_long.empty == False:
+            df_long.loc[:, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+            df_long.loc[:, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
+            df_long.loc[:, DataFrameColum.LEVEREAGE.value] = 10
+            df_long.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long)
 
         return filtered_df_master
     
@@ -155,58 +137,98 @@ class Strategy:
 
         Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
 
-        value_limit_pctg = 0.4
-        value_minim_limit_pctg = 0.2
-
+        value_limit_pctg = 7
+        value_minim_limit_pctg = 4.5
         Strategy.mark_price_exceeds_limit(data_frame = filtered_data_frame, value_limit= value_limit_pctg)
 
-        time_range = TimeRanges("HOUR_1")  #DAY_1  HOUR_4  MINUTES_1
+        time_range = TimeRanges("HOUR_2")  #DAY_1  HOUR_4  MINUTES_1
 
         prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
         filtered_data_frame = Strategy.updating_koncorde(bitget_data_util=bitget_data_util, data_frame=filtered_data_frame, prices_history_dict=prices_history)
 
+        #print (filtered_data_frame.loc[filtered_data_frame.index[-2], 'KONCORDE_MEDIA'])
+        #print (filtered_data_frame.loc[filtered_data_frame.index[-2], 'KONCORDE_VERDE'])
+        #print (filtered_data_frame.loc[filtered_data_frame.index[-2], 'KONCORDE_AZUL'])
+
+        """ #! SHORT - CON CONFIRMACIÓN
+        
+        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
+        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+        query = query + " and ((KONCORDE_MEDIA.str[-3] > KONCORDE_VERDE.str[-3]) and (KONCORDE_MEDIA.str[-3] > KONCORDE_AZUL.str[-3]))"
+        df_short = filtered_data_frame.query(query)
+        """
 
         #! SHORT - SIN CONFIRMACIÓN
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        df_short = filtered_data_frame.query(query)
+        df_short_master = filtered_data_frame.query(query)
 
-        if df_short.empty == False:
-            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_short        
+        if df_short_master.empty == False:     
 
-        #! SHORT - UN SEGURO de VENTA
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        df_short = filtered_data_frame.query(query)
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) and (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+            df_short_opc_1 = df_short_master.query(query)
 
-        if df_short.empty == False:
-            df_short.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_short
+            if df_short_opc_1.empty == False:
+                df_short_opc_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_short_opc_1        
 
+            #! SHORT - UN SEGURO de VENTA
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") or (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " < " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+            df_short_opc_2 = df_short_master.query(query)
 
-        #! LONG - SIN CONFIRMACIÓN
+            if df_short_opc_2.empty == False:
+                df_short_opc_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_short_opc_2
+            
+            #! SHORT - SMA y RSI
+            if df_short_master.empty == False:
+                df_short_opc_3 = bitget_data_util.updating_rsi(length=14, data_frame=df_short_master, prices_history_dict=prices_history)
+                df_short_opc_3 = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_short_opc_3)
+                query = "((SMA.str[-2] < RSI.str[-2]) and (SMA.str[-1] < RSI.str[-1])) "
+                df_short_opc_3 = df_short_opc_3.query(query)
+
+                if df_short_opc_3.empty == False:
+                    df_short_opc_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                    return df_short_opc_3
+                
+        #-------------------------------------- LONG --------------------------------------
+
         query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
-        df_long = filtered_data_frame.query(query)
+        df_long_master = filtered_data_frame.query(query)
 
-        if df_long.empty == False:
-            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_long
+        if df_long_master.empty == False:
 
-        #! LONG - UN SEGURO de VENTAN
-        query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "')"
-        query = query + " and ((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
-        query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
-        df_long = filtered_data_frame.query(query)
+            #! LONG - SIN CONFIRMACIÓN
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] < KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] < KONCORDE_AZUL.str[-2]))"
+            df_long_opc_1 = df_long_master.query(query)
 
-        if df_long.empty == False:
-            df_long.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            return df_long
-    
+            if df_long_opc_1.empty == False:
+                df_long_opc_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_long_opc_1
+
+            query = "((" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_VERDE_LAST.value + ") and (" + DataFrameColum.KONCORDE_MEDIA_LAST.value + " > " + DataFrameColum.KONCORDE_AZUL_LAST.value + "))"
+            query = query + " and ((KONCORDE_MEDIA.str[-2] > KONCORDE_VERDE.str[-2]) or (KONCORDE_MEDIA.str[-2] > KONCORDE_AZUL.str[-2]))"
+            df_long_opc_2 = df_long_master.query(query)
+
+            if df_long_opc_2.empty == False:
+                df_long_opc_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_long_opc_2
+
+            #! SHORT - SMA y RSI
+            if df_long_master.empty == False:
+                df_long_opc_3 = bitget_data_util.updating_rsi(length=14, data_frame=df_long_master, prices_history_dict=prices_history)
+                df_long_opc_3 = Strategy.updating_rsi_sma(bitget_data_util=bitget_data_util, length=14, data_frame=df_long_opc_3)
+                query = "((SMA.str[-2] > RSI.str[-2]) and (SMA.str[-1] > RSI.str[-1])) "
+                df_long_opc_3 = df_long_opc_3.query(query)
+
+                if df_long_opc_3.empty == False:
+                    df_long_opc_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                    return df_long_opc_3
+                
+
         """********************************************** OPCION 1 **********************************************
         Si tiene el valor headdress, es que ya ha superado el value_limit. Se vende en el momento que baja el value_limit """
 
@@ -215,9 +237,7 @@ class Strategy:
 
         if df_op1.empty == False:
             df_op1.loc[:, DataFrameColum.LOOK.value] = "-"
-            df_op1.loc[:, DataFrameColum.STOP_LOSS.value] = 0
             df_op1.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            df_op1.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
 
             return df_op1
 
@@ -227,154 +247,26 @@ class Strategy:
 
         if df_op2.empty == False:
             df_op2.loc[:, DataFrameColum.LOOK.value] = "-"
-            df_op2.loc[:, DataFrameColum.STOP_LOSS.value] = 0
             df_op2.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            df_op2.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
             
             return df_op2
-
         
-        """********************************************** OPCION 3 **********************************************"""
-        query = "(" + DataFrameColum.ROE.value + " < -20)" 
-        df_op3 = filtered_data_frame.query(query)
-
-        if df_op3.empty == False:
-            df_op3.loc[:, DataFrameColum.LOOK.value] = "-"
-            df_op3.loc[:, DataFrameColum.STOP_LOSS.value] = 0
-            df_op3.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            df_op3.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
-            
-            return df_op3        
-
-        """********************************************** OPCION 4 **********************************************"""
-        query = "(" + DataFrameColum.ROE.value + " > 25)" 
-        df_op4 = filtered_data_frame.query(query)
-
-        if df_op4.empty == False:
-            df_op4.loc[:, DataFrameColum.LOOK.value] = "-"
-            df_op4.loc[:, DataFrameColum.STOP_LOSS.value] = 0
-            df_op4.loc[:, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            df_op4.loc[:, DataFrameColum.NOTE_3.value] = Strategy.next_hour(hours = 2)
-            
-            return df_op4       
         
         for ind in filtered_data_frame.index:
-            cntrl_profit_crrnt = float(filtered_data_frame.loc[ind,DataFrameColum.ROE.value]) - 1
+            cntrl_profit_crrnt = float(filtered_data_frame.loc[ind,DataFrameColum.ROE.value]) - 0.5
 
             if float(filtered_data_frame.loc[ind,DataFrameColum.STOP_LOSS.value]) < cntrl_profit_crrnt:
                 filtered_data_frame.loc[ind,DataFrameColum.STOP_LOSS.value] = cntrl_profit_crrnt
 
         return filtered_data_frame
 
-
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @staticmethod
-    def seach_v (filtered_data_frame: pandas.DataFrame, column_result_angle:str, positions_back:float = 0):
-        for ind in filtered_data_frame.index:
-            list_adx = filtered_data_frame[DataFrameColum.ADX.value][ind]
-
-            # Condición para verificar si la lista tiene tamaño menor o igual a 0
-            if len(list_adx) <= 0:
-                continue  # Pasar al siguiente elemento del bucle
-
-            pos_adx_4 = list_adx[-3 + positions_back]
-            pos_adx_3 = list_adx[-2 + positions_back]
-            
-            pos_adx_2 = list_adx[-2]
-            pos_adx_1 = list_adx[-1]
-
-            if (pos_adx_4 > pos_adx_3) and (pos_adx_2 < pos_adx_1): #buscando pico "v"
-
-                list_data_prev = [pos_adx_4, pos_adx_3]
-                angle_prev = float(MathCal_util.calculate_angle(list_data_prev, int_eje_x = 1 ))
-
-                list_data_crrnt = [pos_adx_2, pos_adx_1]
-                angle_crrnt = float(MathCal_util.calculate_angle(list_data_crrnt, int_eje_x = 1 ))
-
-                sum_angles = 180 - (abs(angle_prev) + angle_crrnt)
-                filtered_data_frame.loc[ind, column_result_angle] = sum_angles
-
-        return filtered_data_frame
-
-    @staticmethod
-    def angle (filtered_data_frame: pandas.DataFrame, column_origin:str, column_destination:str, positions_back:float = 0):
-
-        """Calcula el angulo interior entre dos vectores"""
-
-        for ind in filtered_data_frame.index:
-            last_values = filtered_data_frame[column_origin][ind]
-
-            # Condición para verificar si la lista tiene tamaño menor o igual a 0
-            if len(last_values) <= 0:
-                continue  # Pasar al siguiente elemento del bucle
-            
-            # Calculamos las pendientes de las dos líneas
-            pendiente1 = last_values[-2] - last_values[-1]
-            pendiente2 = last_values[-3 + positions_back] - last_values[-2]
-
-            # Calculamos el ángulo entre las pendientes
-            angulo_rad = math.atan2(pendiente2, 1) - math.atan2(pendiente1, 1)
-
-            # Convertimos el ángulo a grados y lo normalizamos entre 0 y 360
-            angulo_grados = math.degrees(angulo_rad)
-
-            # Normalizamos el ángulo entre -180 y 180 grados
-            angulo_grados = (angulo_grados + 180) % 360 - 180
-
-            if angulo_grados >= 0:
-                angulo_grados = 180 - angulo_grados
-            else:
-                angulo_grados = -180 -(angulo_grados)
-
-
-            filtered_data_frame.loc[ind, column_destination] = angulo_grados
-
-        return filtered_data_frame
-
-    def updating_adx(bitget_data_util: BitgetDataUtil, config_adx:ConfigADX=ConfigADX(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):
-        
-        series = config_adx.series
-        
-        if DataFrameColum.ADX.value not in data_frame.columns:
-            data_frame[DataFrameColum.ADX.value] = None
-
-        if DataFrameColum.ADX_ANGLE.value not in data_frame.columns:
-            data_frame[DataFrameColum.ADX_ANGLE.value] = None
-
-        if DataFrameColum.ADX_ASCENDING.value not in data_frame.columns:
-            data_frame[DataFrameColum.ADX_ASCENDING.value] = None
-
-        if DataFrameColum.ADX_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.ADX_LAST.value] = None
-
-        for ind in data_frame.index:
-
-            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
-            
-            try:
-                
-                prices_history = prices_history_dict[symbol]
-                
-                prices_high = prices_history['High'].astype(float)
-                prices_low = prices_history['Low'].astype(float)
-                prices_close = prices_history['Close'].astype(float)
-                open_time_arr = numpy.array(prices_history['Close time'].values)  
-
-                adx = pandas_ta.adx(high=prices_high, low=prices_low, close=prices_close, series=series)
-
-                adx_numpy = numpy.array(adx)
-                adx_numpy = adx_numpy[~numpy.isnan(adx_numpy)]
-                data_frame[DataFrameColum.ADX.value][ind] = adx_numpy
-                data_frame.loc[ind, DataFrameColum.ADX_LAST.value] = bitget_data_util.get_last_element(element_list = adx_numpy, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.ADX_ASCENDING.value] = bitget_data_util.list_is_ascending(check_list = adx_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                #data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = bitget_data_util.angle_one_line(line_points = adx_numpy, time_points = open_time_arr, time_range = time_range)
-                data_frame.loc[ind, DataFrameColum.ADX_ANGLE.value] = bitget_data_util.adx_angle(list_adx = adx_numpy, previous_period = previous_period)
-                
-                                                                    
-            except Exception as e:
-                bitget_data_util.print_error_updating_indicator(symbol, "ADX", e)
-                continue
-        
-        return data_frame  
+    def mark_price_exceeds_limit(data_frame: pandas.DataFrame, value_limit: float = 1) -> pandas.DataFrame:
+        """Marcamos las cons con el profit superior al limite marcado"""
+        data_frame.loc[data_frame[DataFrameColum.ROE.value] >= value_limit, DataFrameColum.LOOK.value] = 'headdress!'
+        return data_frame
+    
 
     def updating_rsi_sma(bitget_data_util: BitgetDataUtil, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), ascending_count:int = 2, previous_period:int = 0):
         
@@ -498,13 +390,6 @@ class Strategy:
         nvimax = nvim.rolling(window=90).max()  # .shift(-89)
         nvimin = nvim.rolling(window=90).min()  # .shift(-89)
         val_blue = (nvi - nvim) * 100 / (nvimax - nvimin)
-
-        # Convertir las columnas a un tipo compatible (float64)
-        df_stocks["Close"] = numpy.array(df_stocks["Close"], dtype=numpy.float64)
-        df_stocks["Volume"] = numpy.array(df_stocks["Volume"], dtype=numpy.float64)
-        df_stocks["High"] = numpy.array(df_stocks["High"], dtype=numpy.float64)
-        df_stocks["Low"] = numpy.array(df_stocks["Low"], dtype=numpy.float64)
-
         xmf = pandas_ta.mfi(close = df_stocks["Close"], volume=df_stocks["Volume"], high=df_stocks["High"], low=df_stocks["Low"],length=14)
         #xmf = talib.MFI(df_stocks['High'], df_stocks['Low'], df_stocks['Close'], df_stocks['Volume'], timeperiod=14)
         # mult=input(2.0)
@@ -562,6 +447,9 @@ class Strategy:
         ax.set_prop_cycle(None)
         # stacked area plot of negative values, prepend column names with '_' such that they don't appear in the legend
         df_neg.rename(columns=lambda x: '_' + x).plot.area(ax=ax, stacked=True, linewidth=0.)
+        # rescale the y axis
+        print (df_neg.sum(axis=1).min())
+        print (df_pos.sum(axis=1).max())
         #ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
         ax.set_ylim([-200, 200])
         ax.autoscale(enable=True)
@@ -569,13 +457,11 @@ class Strategy:
         # ax.plot(df['High'][start_row_num:] * 0.4, color="black")
         plt.savefig(path)
 
-        return df_plot, media
+        print (df_neg)
+        print (df_pos)
+        print (df_plot)
 
-    @staticmethod
-    def mark_price_exceeds_limit(data_frame: pandas.DataFrame, value_limit: float = 1) -> pandas.DataFrame:
-        """Marcamos las cons con el profit superior al limite marcado"""
-        data_frame.loc[data_frame[DataFrameColum.ROE.value] >= value_limit, DataFrameColum.LOOK.value] = 'headdress!'
-        return data_frame
+        return df_plot, media
     
     @staticmethod
     def next_hour(hours: int = 1):
@@ -597,8 +483,8 @@ class Strategy:
                 data_frame[[DataFrameColum.SYMBOL.value,
                             DataFrameColum.SIDE_TYPE.value,
                             DataFrameColum.ROE.value, 
+                            DataFrameColum.PNL.value, 
                             DataFrameColum.STOP_LOSS.value,
-                            DataFrameColum.PNL.value,
                             DataFrameColum.LOOK.value
                             ]])
             print("#####################################################################################################################")

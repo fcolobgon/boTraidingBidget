@@ -200,7 +200,7 @@ class Strategy:
                     df_stp_3.loc[ind, DataFrameColum.TAKE_PROFIT.value] = tp
                     df_stp_3.loc[ind, DataFrameColum.STOP_LOSS.value] = sl
 
-                    df_stp_3.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
+                        
                     df_stp_3.loc[ind, DataFrameColum.LEVEREAGE.value] = 15
                     df_stp_3.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
                     df_stp_3.loc[ind, self.step_counter] = 0
