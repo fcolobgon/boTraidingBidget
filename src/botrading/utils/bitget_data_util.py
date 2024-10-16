@@ -5,8 +5,6 @@ import pandas
 import numpy
 from math import atan
 from decimal import Decimal
-import pandas_ta.momentum
-import pandas_ta.volume
 from ta.trend import ADXIndicator
 import pandas_ta 
 
@@ -22,9 +20,7 @@ from src.botrading.utils import excel_util
 from src.botrading.utils.enums.colum_state_values import ColumStateValues
 from src.botrading.utils.enums.data_frame_colum import DataFrameColum
 from src.botrading.utils.enums.colum_good_bad_values import ColumLineValues
-from src.botrading.utils.enums.future_values import FutureValues
-from src.botrading.utils.dataframe_util import DataFrameUtil
-from sklearn.preprocessing import MinMaxScaler
+
 
 from configs.config import settings as settings
 
@@ -79,48 +75,50 @@ class BitgetDataUtil:
                                 DataFrameColum.VOLUMEPLACE.value, DataFrameColum.PRICEPLACE.value, DataFrameColum.PRICEENDSTEP.value,DataFrameColum.BUY_LIMIT_PRICE_RATIO.value,
                                 DataFrameColum.MIN_TRADE_NUM.value, DataFrameColum.SIZE_MULTIPLIER.value]  # Índices de las columnas que deseas mantener (0-indexed)
             
-            self.data_frame_bkp = self.data_frame_bkp[columnas_a_mantener]
+            self.data_frame_bkp = self.data_frame_bkp.loc[:,columnas_a_mantener]
             
 
             #Columnas necesarias de arranque
-            #self.data_frame_bkp[DataFrameColum.SYMBOL.value] = "-"
-            self.data_frame_bkp[DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
-            self.data_frame_bkp[DataFrameColum.ORDER_OPEN.value] = False
-            self.data_frame_bkp[DataFrameColum.ORDER_ID.value] = "-"
-            self.data_frame_bkp[DataFrameColum.CLIENT_ORDER_ID.value] = "-"
-            self.data_frame_bkp[DataFrameColum.DATE.value] = "-"
-            self.data_frame_bkp[DataFrameColum.PRICE_BUY.value] = "-"
-            self.data_frame_bkp[DataFrameColum.PRICE_SELL.value] = "-"
-            self.data_frame_bkp[DataFrameColum.CLOSE.value] = "-"
-            self.data_frame_bkp[DataFrameColum.DATE_PRICE_BUY.value] = "-"
-            self.data_frame_bkp[DataFrameColum.LOCK.value] = "-"
-            self.data_frame_bkp[DataFrameColum.LOOK.value] = False
-            self.data_frame_bkp[DataFrameColum.FIRST_ITERATION.value] = True
-            self.data_frame_bkp[DataFrameColum.SIDE_TYPE.value] = "-"
-            self.data_frame_bkp[DataFrameColum.MONEY_SPENT.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.SIZE.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.ROE.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.PNL.value] = 0.0
+            #self.data_frame_bkp.loc[:,DataFrameColum.SYMBOL.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.STATE.value] = ColumStateValues.WAIT.value
+            self.data_frame_bkp.loc[:,DataFrameColum.ORDER_OPEN.value] = False
+            self.data_frame_bkp.loc[:,DataFrameColum.ORDER_ID.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.CLIENT_ORDER_ID.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.DATE.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.PRICE_BUY.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.PRICE_SELL.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.CLOSE.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.DATE_PRICE_BUY.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.LOCK.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.LOOK.value] = False
+            self.data_frame_bkp.loc[:,DataFrameColum.FIRST_ITERATION.value] = True
+            self.data_frame_bkp.loc[:,DataFrameColum.SIDE_TYPE.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.MONEY_SPENT.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.SIZE.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.ROE.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PNL.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PRESET_TAKE_PROFIT_PRICE.value] = 0.0
 
-            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
-            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
-            self.data_frame_bkp[DataFrameColum.TAKE_PROFIT.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.TAKE_PROFIT_TOUCH.value] = False
-            self.data_frame_bkp[DataFrameColum.STOP_LOSS.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.STOP_LOSS_LEVEL.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = True
+            self.data_frame_bkp.loc[:,DataFrameColum.PERCENTAGE_PROFIT.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PERCENTAGE_PROFIT_PREV.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.PERCENTAGE_PROFIT_ASCENDING.value] = False
+            self.data_frame_bkp.loc[:,DataFrameColum.TAKE_PROFIT.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.TAKE_PROFIT_TOUCH.value] = False
+            self.data_frame_bkp.loc[:,DataFrameColum.STOP_LOSS.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.STOP_LOSS_LEVEL.value] = 0.0
             
-            self.data_frame_bkp[DataFrameColum.LEVEREAGE.value] = 0  
+            self.data_frame_bkp.loc[:,DataFrameColum.LEVEREAGE.value] = 0  
 
-            self.data_frame_bkp[DataFrameColum.NOTE.value] = "-"  
-            self.data_frame_bkp[DataFrameColum.NOTE_2.value] = "-"
-            self.data_frame_bkp[DataFrameColum.NOTE_3.value] = "-"
-            self.data_frame_bkp[DataFrameColum.NOTE_4.value] = "-"
-            self.data_frame_bkp[DataFrameColum.NOTE_5.value] = "-"
-            self.data_frame_bkp[DataFrameColum.ERROR.value] = "-"
-            self.data_frame_bkp[DataFrameColum.FEE_BUY.value] = 0.0
-            self.data_frame_bkp[DataFrameColum.FEE_SELL.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.NOTE.value] = "-"  
+            self.data_frame_bkp.loc[:,DataFrameColum.NOTE_2.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.NOTE_3.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.NOTE_4.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.NOTE_5.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.ERROR.value] = "-"
+            self.data_frame_bkp.loc[:,DataFrameColum.FEE_BUY.value] = 0.0
+            self.data_frame_bkp.loc[:,DataFrameColum.FEE_SELL.value] = 0.0
 
             self.data_frame_bkp = DataFrameCheckUtil.create_price_columns(data_frame=self.data_frame_bkp)
             #self.data_frame_bkp = DataFrameCheckUtil.create_adx_columns(data_frame=self.data_frame_bkp)
@@ -192,15 +190,20 @@ class BitgetDataUtil:
         
         df = traiding_operations.get_open_positions(clnt_bit=self.client_bit)
 
+        excel_util.save_data_frame( data_frame=df, exel_name="buy.xlsx")
+
         if df.empty:
-            data_frame[DataFrameColum.ORDER_OPEN.value] = False
+            data_frame.loc[:,DataFrameColum.ORDER_OPEN.value] = False
+
+            return data_frame
+
 
         for ind in data_frame.index:
             
             symbol = data_frame.loc[ind, DataFrameColum.BASE.value]
             sideType = data_frame.loc[ind, DataFrameColum.SIDE_TYPE.value]
 
-            row_values = df[df["symbol"].str.contains(symbol)& (df['holdSide'] == sideType)] 
+            row_values = df[df["symbol"].str.contains(symbol)& (df['holdSide'] == sideType)]             
 
             if row_values.empty == False:
 
@@ -209,11 +212,9 @@ class BitgetDataUtil:
 
                 data_frame.loc[ind, DataFrameColum.ROE.value] = roe
                 data_frame.loc[ind, DataFrameColum.PNL.value] = pnl
-                
-                position = float(row_values["total"].values[0])
-                
-                if position == 0:
-                    data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = False
+            
+            else:
+                data_frame.loc[ind, DataFrameColum.ORDER_OPEN.value] = False
 
             
             
@@ -606,8 +607,8 @@ class BitgetDataUtil:
                 rsi_numpy = rsi_numpy[~numpy.isnan(rsi_numpy)]
 
                 data_frame[DataFrameColum.RSI.value][ind] = rsi_numpy
-                data_frame[DataFrameColum.RSI_LAST.value][ind] = rsi_numpy[-1]
-                data_frame[DataFrameColum.RSI_ASCENDING.value][ind] = self.list_is_ascending(check_list = rsi_numpy, ascending_count = ascending_count, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.RSI_LAST.value] = rsi_numpy[-1]
+                data_frame.loc[ind,DataFrameColum.RSI_ASCENDING.value] = self.list_is_ascending(check_list = rsi_numpy, ascending_count = ascending_count)
                                                                     
             except Exception as e:
                 self.print_error_updating_indicator(symbol, "RSI", e)
@@ -738,12 +739,40 @@ class BitgetDataUtil:
             element_value = element_list
 
         return element_value[-1]
-    
+    """
     def list_is_ascending(self, check_list:numpy=[], ascending_count:int = 3, previous_period:int = 0) -> bool:
 
         #elements = check_list[-ascending_count:]
         #is_ascending = all(elements[i] <= elements[i+1] for i in range(len(elements)-1))
         return check_list[-1] > check_list[-2]
+    """
+        
+    def list_is_ascending(self, check_list:numpy=[], ascending_count:int= 2) -> bool:
+
+        last_elements = check_list[-ascending_count:]
+
+        # Verificamos si es ascendente
+        is_ascending = all(last_elements[i] < last_elements[i + 1] for i in range(len(last_elements) - 1))
+        
+        # Verificamos si es descendente
+        is_descending = all(last_elements[i] > last_elements[i + 1] for i in range(len(last_elements) - 1))
+
+        if is_ascending:
+            return True
+        elif is_descending:
+            return False
+        else:
+            return -1
+
+        """
+        if ((last_elements[-1] > last_elements[-2]) and (last_elements[-2] > last_elements[-3])):
+            return True
+        elif (last_elements[-1] < last_elements[-2]) and (last_elements[-2] < last_elements[-3]):
+            return False
+        else:
+            return -1
+        """
+        
  
     def cruce_zero(self, series:numpy) -> str:
 

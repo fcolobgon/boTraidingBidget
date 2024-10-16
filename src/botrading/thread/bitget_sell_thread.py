@@ -70,12 +70,15 @@ class BitgetSellThreed(threading.Thread):
 
                     if data_frame_sell_now.empty:
                         #print("No hay monedas para vender ahora!!")
+#! INI 240919 - Nueva función que permite modificar el TakeProfit y el StopLoss
+                        traiding_operations.logic_modify_TPSL(clnt_bit=self.client_bit, df_modify=data_frame_for_sell)
+#! FIn 240919 - Nueva función que permite modificar el TakeProfit y el StopLoss
                         self.buy_thread.merge_dataframes(update_data_frame=data_frame_for_sell)
                     else:
                         df_sell = traiding_operations.logic_sell(clnt_bit=self.client_bit, df_sell=data_frame_sell_now)
 
                         self.buy_thread.merge_dataframes(update_data_frame=df_sell)
-
+                
             time.sleep(1)
     
     def check_dataframe_contains_buy_coins(self) -> bool:

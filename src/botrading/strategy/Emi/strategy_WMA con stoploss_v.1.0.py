@@ -58,7 +58,7 @@ class Strategy:
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
-     
+        """     
         query = "(" + DataFrameColum.RSI_LAST.value + " < 30)"
         df_long_step_1 = filtered_data_frame.query(query)
         
@@ -119,10 +119,10 @@ class Strategy:
 
 
         # ------------------------------------- BORRAR DATES DE WINDOWS ------------------------------------------------
-        
+
         query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') or (" + DataFrameColum.NOTE.value + " == 'CHECK_LNG')"
         df_check = filtered_df_master.query(query)
-
+        
         #Formato de fecha
         df_check[DataFrameColum.NOTE_3.value] = pandas.to_datetime(df_check[DataFrameColum.NOTE_3.value], format='%d-%m-%Y %H:%M:%S')
 
@@ -135,6 +135,59 @@ class Strategy:
             df_check.loc[:, DataFrameColum.NOTE.value] = "-"
 
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_check)
+        """
+        # ------------------------------------- PRUEBA PARA BORRAR ------------------------------------------------
+        query = "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
+        df_long_prueba = filtered_data_frame.query(query)
+
+        if df_long_prueba.empty == False:
+
+            #df_buy = Strategy.updating_wma(bitget_data_util=bitget_data_util, length=9, data_frame=df_long_prueba, 
+            #                                        prices_history_dict=prices_history_dict, ascending_count=3)
+            for ind in df_long_prueba.index:
+
+                #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
+                #df_long_prueba = df_buy.query(query)
+                
+                df_long_prueba.loc[:, DataFrameColum.NOTE.value] = "CHECK_LNG"
+                df_long_prueba.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_LONG.value
+                df_long_prueba.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
+                df_long_prueba.loc[ind, DataFrameColum.LEVEREAGE.value] = 10
+                df_long_prueba.loc[:, DataFrameColum.NOTE_3.value] = Strategy.sum_hour(hours = hours_window_check)
+                
+                symbol = df_long_prueba.loc[ind,DataFrameColum.SYMBOL.value]
+                prices_history = prices_history_dict[symbol]
+                close = prices_history['Close'].astype(float)   
+                last_num = close[-15:]
+                df_long_prueba.loc[ind, DataFrameColum.STOP_LOSS.value] =  min(last_num)  
+
+                df_long_prueba.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba)
+
+        query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
+        df_short_prueba = filtered_data_frame.query(query)
+
+        if df_short_prueba.empty == False:
+            for ind in df_short_prueba.index:
+                df_short_prueba.loc[:, DataFrameColum.NOTE.value] = "CHECK_SHRT"
+                df_short_prueba.loc[ind, DataFrameColum.SIDE_TYPE.value] = FutureValues.SIDE_TYPE_SHORT.value
+                df_short_prueba.loc[ind, DataFrameColum.PERCENTAGE_PROFIT_FLAG.value] = False
+                df_short_prueba.loc[ind, DataFrameColum.LEVEREAGE.value] = 10
+                df_short_prueba.loc[:, DataFrameColum.NOTE_3.value] = Strategy.sum_hour(hours = hours_window_check)
+                
+                symbol = df_short_prueba.loc[ind,DataFrameColum.SYMBOL.value]
+                prices_history = prices_history_dict[symbol]
+                close = prices_history['Close'].astype(float)   
+                last_num = close[-15:]
+                df_short_prueba.loc[ind, DataFrameColum.STOP_LOSS.value] =  max(last_num)  
+
+                df_short_prueba.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
+
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
+
+
+        # ------------------------------------- PRUEBA PARA BORRAR ------------------------------------------------
 
         Strategy.print_data_frame(message="COMPRA ", data_frame=filtered_df_master)
 
@@ -147,81 +200,94 @@ class Strategy:
         state_query = RuleUtils.get_rules_search_by_states(rules)
         filtered_data_frame = data_frame.query(state_query)
 
-        startTime = datetime.now()
-        startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
+        if filtered_data_frame.empty:
+            return pandas.DataFrame()
+        else:
 
-        filtered_data_frame =  bitget_data_util.updating_pnl_roe_orders(data_frame=filtered_data_frame, startTime=startTime)
+            startTime = datetime.now()
+            startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        if filtered_data_frame.empty == False:
-            query = DataFrameColum.ORDER_OPEN.value + " == False"      
-            df_order = filtered_data_frame.query(query)
+            filtered_data_frame =  bitget_data_util.updating_pnl_roe_orders(data_frame=filtered_data_frame, startTime=startTime)
+            #open_order = traiding_operations.get_open_positions(productType='umcbl')
+            #excel_util.save_data_frame( data_frame=open_order, exel_name="order.xlsx")
 
-            if df_order.empty == False:
-                df_order[DataFrameColum.ORDER_ID.value] = "-"
-                df_order[DataFrameColum.TAKE_PROFIT.value] = 0.0
-                df_order[DataFrameColum.STOP_LOSS.value] = 0.0
-                df_order.loc[:, DataFrameColum.NOTE.value] = ""
-                df_order[DataFrameColum.STATE.value] = ColumStateValues.SELL.value
 
-                return df_order
 
-        Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
+        # -------------------------------- C O N T R O L  V E N T A  M A N U A L  ------------------------------------
+            if filtered_data_frame.empty == False:
+                query = DataFrameColum.ORDER_OPEN.value + " == False"      
+                df_order = filtered_data_frame.query(query)
 
-        time_range = TimeRanges("HOUR_1")  #DAY_1  HOUR_4  MINUTES_1
+                if df_order.empty == False:
+                    df_order[DataFrameColum.ORDER_ID.value] = "-"
+                    df_order[DataFrameColum.TAKE_PROFIT.value] = 0.0
+                    df_order[DataFrameColum.STOP_LOSS.value] = 0.0
+                    df_order.loc[:, DataFrameColum.NOTE.value] = "-"
+                    df_order.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                    df_order[DataFrameColum.STATE.value] = ColumStateValues.SELL.value
 
-        prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
-        filtered_data_frame = Strategy.updating_wma(bitget_data_util=bitget_data_util, length=20, data_frame=filtered_data_frame, prices_history_dict=prices_history, ascending_count=3)
+                    return df_order
+        # -------------------------------- C O N T R O L  V E N T A  M A N U A L  ------------------------------------                    
 
-       # -------------------------------- L O N G  ------------------------------------
+            Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
 
-        query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.WMA_ASCENDING.value + " == False)"
-        df_long_step_1 = filtered_data_frame.query(query)
+            time_range = TimeRanges("HOUR_1")  #DAY_1  HOUR_4  MINUTES_1
 
-        if df_long_step_1.empty == False:
-            df_long_step_1.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
-            df_long_step_1.loc[:, DataFrameColum.NOTE.value] = ""
-            df_long_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+            prices_history = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
+            filtered_data_frame = Strategy.updating_wma(bitget_data_util=bitget_data_util, length=20, data_frame=filtered_data_frame, prices_history_dict=prices_history, ascending_count=3)
 
-            return df_long_step_1 
+        # -------------------------------- L O N G  ------------------------------------
 
-       # -------------------------------- S H O R T  ------------------------------------
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.WMA_ASCENDING.value + " == False) "
+            df_long_step_1 = filtered_data_frame.query(query)
 
-        query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and (" + DataFrameColum.WMA_ASCENDING.value + " == True)"
-        df_short_step_1 = filtered_data_frame.query(query)
+            if df_long_step_1.empty == False:
+                df_long_step_1.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_long_step_1.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_long_step_1.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_long_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
 
-        if df_short_step_1.empty == False:
-            df_short_step_1.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
-            df_short_step_1.loc[:, DataFrameColum.NOTE.value] = ""
-            df_short_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+                return df_long_step_1 
 
-            return df_short_step_1 
+        # -------------------------------- S H O R T  ------------------------------------
+
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and (" + DataFrameColum.WMA_ASCENDING.value + " == True)"
+            df_short_step_1 = filtered_data_frame.query(query)
+
+            if df_short_step_1.empty == False:
+                df_short_step_1.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_short_step_1.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_short_step_1.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_short_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+                return df_short_step_1 
+            
+        # -------------------------------- M O V E  S T O P L O S S   ------------------------------------
+
+            #filtered_data_frame.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.5215
+            """
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG')"
+            df_lng_sl = filtered_data_frame.query(query)
+
+            if df_lng_sl.empty == False:
+            
+                for ind in df_lng_sl.index:
+                    sl = df_lng_sl.loc[ind, DataFrameColum.STOP_LOSS.value]
+            
+                    #INFORMAR STOPLOSS
+
+                    return df_lng_sl
+
+
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT')"
+            df_shrt_sl = filtered_data_frame.query(query)
+
+            if df_shrt_sl.empty == False:
+                df_shrt_sl.loc[:, DataFrameColum.STOP_LOSS.value] = 0
+                df_shrt_sl.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+            """
         
-       # -------------------------------- M O V E  S T O P L O S S   ------------------------------------
-
-        #filtered_data_frame.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.5215
-        """
-        query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG')"
-        df_lng_sl = filtered_data_frame.query(query)
-
-        if df_lng_sl.empty == False:
-        
-            for ind in df_lng_sl.index:
-                sl = yo puedo verodf_lng_sl.loc[ind, DataFrameColum.STOP_LOSS.value]
-        
-                #INFORMAR STOPLOSS
-
-                return df_lng_sl
-
-
-        query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT')"
-        df_shrt_sl = filtered_data_frame.query(query)
-
-        if df_shrt_sl.empty == False:
-            df_shrt_sl.loc[:, DataFrameColum.STOP_LOSS.value] = 0
-            df_shrt_sl.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-        """
-        
-        return filtered_data_frame
+            return filtered_data_frame
 
 
 
@@ -233,7 +299,7 @@ class Strategy:
         return data_frame
     
 
-    def updating_wma(bitget_data_util: BitgetDataUtil, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0):        
+    def updating_wma(bitget_data_util: BitgetDataUtil, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):        
         if DataFrameColum.WMA.value not in data_frame.columns:
             data_frame[DataFrameColum.WMA.value] = "-"
 
@@ -256,8 +322,11 @@ class Strategy:
                 wma_numpy = wma_numpy[~numpy.isnan(wma_numpy)]
                                 
                 data_frame[DataFrameColum.WMA.value][ind] = wma_numpy
+
+                print (symbol)
+
                 data_frame.loc[ind, DataFrameColum.WMA_ASCENDING.value] = bitget_data_util.list_is_ascending(check_list = wma_numpy, ascending_count = ascending_count)
-                data_frame.loc[ind, DataFrameColum.WMA_LAST.value] = bitget_data_util.get_last_element(element_list = wma_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.WMA_LAST.value] = bitget_data_util.get_last_element(element_list = wma_numpy)
                
             except Exception as e:
                 bitget_data_util.print_error_updating_indicator(symbol, "WMA", e)

@@ -25,6 +25,8 @@ class DataFrameColum(Enum):
     VOLUME = "VOLUME"
     ROE = "ROE"
     PNL = "PnL"
+    PRESET_STOP_LOSS_PRICE = "presetStopLossPrice"  
+    PRESET_TAKE_PROFIT_PRICE = "PresetTakeProfitPrice"
 
     ERROR = "ERROR"
     FEE_BUY = "FEE_BUY"
@@ -165,6 +167,10 @@ class DataFrameColum(Enum):
     SMA = "SMA"
     SMA_ASCENDING = "SMA_ASCENDING"
     SMA_LAST = "SMA_LAST"
+
+    WMA = "WMA"
+    WMA_ASCENDING = "WMA_ASCENDING"
+    WMA_LAST = "WMA_LAST"
 
     TRIX = "TRIX"
     TRIX_ASCENDING = "TRIX_ASCENDING"

@@ -23,7 +23,7 @@ class BitgetClienManager:
             self.buy_sell = False
         else:
             self.buy_sell = True
-        self.client_bit = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=False)
+        self.client_bit = Client(api_key=api_key, api_secret_key=api_secret, passphrase=api_passphrase,use_server_time=True)
 
         # Check OS
         my_os = platform.system()

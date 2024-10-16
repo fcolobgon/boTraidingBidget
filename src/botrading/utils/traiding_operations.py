@@ -2,7 +2,6 @@
 from datetime import datetime
 import pandas
 import numpy
-from binance import helpers
 
 from src.botrading.bit import BitgetClienManager
 from src.botrading.constants import botrading_constant
@@ -102,7 +101,11 @@ def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
                 print ('takeProfit: ' + str(takeProfit))
                 print ('stopLoss: ' + str(stopLoss))
 
-                order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+                if (takeProfit != 0.0):
+                    order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetTakeProfitPrice = takeProfit, presetStopLossPrice = stopLoss)
+                else:
+                    order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market', presetStopLossPrice = stopLoss)
+    
             else:
                 order = clnt_bit.client_bit.mix_place_order(symbol, marginCoin = margin_coin, size = formatted_price, side = 'open_' + sideType, orderType = 'market') 
                 
@@ -176,6 +179,28 @@ def logic_sell(clnt_bit: BitgetClienManager, df_sell:pandas.DataFrame) -> pandas
     excel_util.save_sell_file(df_sell)
 
     return df_sell
+
+
+def logic_modify_TPSL(clnt_bit: BitgetClienManager, df_modify:pandas.DataFrame) -> pandas.DataFrame:
+
+    for ind in df_modify.index:
+
+        order_id = df_modify.loc[ind,DataFrameColum.ORDER_ID.value]        
+        symbol = df_modify.loc[ind,DataFrameColum.SYMBOL.value]        
+        margin_coin = settings.MARGINCOIN
+        preset_stop_loss_price = df_modify.loc[ind,DataFrameColum.PRESET_STOP_LOSS_PRICE.value]  
+        preset_take_profit_price = df_modify.loc[ind,DataFrameColum.PRESET_TAKE_PROFIT_PRICE.value]
+        
+        symbol = str(symbol).upper()
+
+        if (preset_stop_loss_price > 0.0 and preset_take_profit_price > 0.0): 
+            order = clnt_bit.client_bit.mix_modify_plan_order(orderId=order_id, symbol=symbol, marginCoin = margin_coin, 
+                                                                   presetStopLossPrice = preset_stop_loss_price, presetTakeProfitPrice = preset_take_profit_price) 
+        elif (preset_stop_loss_price == 0.0 and preset_take_profit_price > 0.0): 
+            order = clnt_bit.client_bit.mix_order(orderId=order_id, symbol=symbol, marginCoin = margin_coin, presetTakeProfitPrice = preset_take_profit_price) 
+        elif (preset_stop_loss_price > 0.0 and preset_take_profit_price == 0.0): 
+            order = clnt_bit.client_bit.mix_cp_modify_tpsl(orderId=order_id, symbol=symbol, marginCoin = margin_coin, stopLossPrice=preset_stop_loss_price) 
+
 
 
 class TradingUtil:
