@@ -62,7 +62,7 @@ class BitgetSellThreed(threading.Thread):
                 
                 data_frame_for_sell = self.strategy.apply_sell(bitget_data_util=self.bitget_data_util, data_frame=self.buy_thread.get_data_frame())
 
-                if data_frame_for_sell.empty == False:
+                if data_frame_for_sell is not None and not data_frame_for_sell.empty:
 
                     rules = [ColumStateValues.READY_FOR_SELL]
                     state_query = RuleUtils.get_rules_search_by_states(rules)
