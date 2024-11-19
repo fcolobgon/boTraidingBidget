@@ -574,7 +574,7 @@ class BitgetDataUtil:
                 data_frame.loc[ind, DataFrameColum.MACD_PREVIOUS_CHART.value] = macd_h_numpy[-2]
                 data_frame.loc[ind, DataFrameColum.MACD_CHART_ASCENDING.value] = self.list_is_ascending(check_list = macd_h_numpy, ascending_count = ascending_count)
                 data_frame.loc[ind, DataFrameColum.MACD_ASCENDING.value] = self.list_is_ascending(check_list = macd_numpy, ascending_count = ascending_count)
-                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy, ascending_count, previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = self.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy)
                 data_frame.loc[ind, DataFrameColum.MACD_CRUCE_ZERO.value] = self.cruce_zero(macd_h_numpy)
                 
             except Exception as e:
@@ -793,6 +793,7 @@ class BitgetDataUtil:
         return float(num_str)
         
     # ELIMINAR ascending_count:int = 3 ???
+    """
     def good_indicator_on_top_of_bad(self, good_series:numpy, bad_series:numpy, ascending_count:int = 3, previous_period:int = 0) -> str:
         
         elements = 3
@@ -804,7 +805,7 @@ class BitgetDataUtil:
         if previous_period > 0:
             line_good = line_good[0:elements]
             line_bad = line_bad[0:elements]
-
+        
         position = 0
         line_good_count = 0
         line_bad_count = 0
@@ -827,6 +828,18 @@ class BitgetDataUtil:
                 return ColumLineValues.BLUE_CRUCE_TOP.value
         
         return ColumLineValues.BLUE_CRUCE_DOWN.value
+    """
+    def good_indicator_on_top_of_bad(self, line_good:numpy, line_bad:numpy) -> str:
+        
+        if (line_good[-2] < line_bad[-2]) and (line_good[-1] > line_bad[-1]): 
+            return ColumLineValues.BLUE_CRUCE_TOP.value
+        elif (line_good[-2] > line_bad[-2]) and (line_good[-1] < line_bad[-1]): 
+            return ColumLineValues.BLUE_CRUCE_DOWN.value
+        elif (line_good[-2] > line_bad[-2]) and (line_good[-1] > line_bad[-1]): 
+            return ColumLineValues.BLUE_TOP.value
+        else:
+            return ColumLineValues.RED_TOP.value
+
     
     def adx_angle(self, list_adx:numpy=[], previous_period:int = 0) -> float:
         
