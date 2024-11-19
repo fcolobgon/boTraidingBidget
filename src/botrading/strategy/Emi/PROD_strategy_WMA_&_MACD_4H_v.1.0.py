@@ -55,12 +55,13 @@ class Strategy:
         filtered_data_frame = Strategy.updating_wma(bitget_data_util=bitget_data_util, length=20, data_frame=filtered_data_frame, prices_history_dict=prices_history_dict, ascending_count=3)
         
         config_macd = ConfigMACD(fast=12, slow=26, signal=9)
-        filtered_data_frame = bitget_data_util.updating_macd(config_macd = config_macd, data_frame = filtered_data_frame, prices_history_dict = prices_history_dict, ascending_count = 3)
+        filtered_data_frame = bitget_data_util.updating_macd(config_macd = config_macd, data_frame = filtered_data_frame, prices_history_dict = prices_history_dict, ascending_count = 2)
 
+        Strategy.print_data_frame(message="COMPRA ", data_frame=filtered_data_frame)
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
-        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING.value + " == True))"
+        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "'))"
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
         df_long_prueba = filtered_data_frame.query(query)
 
@@ -85,7 +86,7 @@ class Strategy:
 
         # -------------------------------- S H O R T  ------------------------------------
 
-        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING.value + " == False))"
+        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "'))"
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
         df_short_prueba = filtered_data_frame.query(query)
 
@@ -106,8 +107,6 @@ class Strategy:
                 df_short_prueba.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
 
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
-
-        Strategy.print_data_frame(message="COMPRA ", data_frame=filtered_df_master)
 
         return filtered_df_master
 
@@ -155,12 +154,12 @@ class Strategy:
             prices_history_dict = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
             filtered_data_frame = Strategy.updating_wma(bitget_data_util=bitget_data_util, length=20, data_frame=filtered_data_frame, prices_history_dict=prices_history_dict, ascending_count=3)
             config_macd = ConfigMACD(fast=12, slow=26, signal=9)
-            filtered_data_frame = bitget_data_util.updating_macd(config_macd = config_macd, data_frame = filtered_data_frame, prices_history_dict = prices_history_dict, ascending_count = 3)
+            filtered_data_frame = bitget_data_util.updating_macd(config_macd = config_macd, data_frame = filtered_data_frame, prices_history_dict = prices_history_dict, ascending_count = 2)
 
 
         # -------------------------------- L O N G  ------------------------------------
 
-            query = "((" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.WMA_ASCENDING.value + " == False or " + DataFrameColum.MACD_ASCENDING.value + " == False))"
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and ((" + DataFrameColum.WMA_ASCENDING.value + " == False) or (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "'))"
             df_long_step_1 = filtered_data_frame.query(query)
 
             if df_long_step_1.empty == False:
@@ -173,7 +172,7 @@ class Strategy:
 
         # -------------------------------- S H O R T  ------------------------------------
 
-            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and (" + DataFrameColum.WMA_ASCENDING.value + " == True or " + DataFrameColum.MACD_ASCENDING.value + " == True))"
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and ((" + DataFrameColum.WMA_ASCENDING.value + " == True) or (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "'))"
             df_short_step_1 = filtered_data_frame.query(query)
 
             if df_short_step_1.empty == False:
@@ -486,6 +485,7 @@ class Strategy:
                             DataFrameColum.NOTE.value,
                             DataFrameColum.NOTE_3.value,
                             DataFrameColum.WMA_ASCENDING.value,
+                            DataFrameColum.MACD_CRUCE_LINE.value,
                             DataFrameColum.ROE.value, 
                             DataFrameColum.PNL.value, 
                             DataFrameColum.STOP_LOSS.value
