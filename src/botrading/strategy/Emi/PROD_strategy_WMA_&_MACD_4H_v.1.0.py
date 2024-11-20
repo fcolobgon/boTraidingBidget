@@ -48,7 +48,10 @@ class Strategy:
         filtered_df_master = filtered_data_frame
 
         time_range = TimeRanges("HOUR_4") #DAY_1  HOUR_4  MINUTES_1
-        hours_window_check = 10
+        hours_window_check = 10 
+
+        if Strategy.is_weekend_schedule():
+            return filtered_data_frame
 
         prices_history_dict = bitget_data_util.get_historial_x_day_ago_all_crypto(df_master = filtered_data_frame, time_range = time_range, limit=1000)
         #filtered_data_frame = bitget_data_util.updating_rsi(length=9, data_frame=filtered_data_frame, prices_history_dict=prices_history_dict, ascending_count=2)
@@ -225,6 +228,23 @@ class Strategy:
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def is_weekend_schedule():
+        # Obtener la hora actual
+        ahora = datetime.now()
+        
+        # Obtener el día de la semana (0 = lunes, 6 = domingo)
+        dia_semana = ahora.weekday()
+        
+        # Reglas para el horario de trading de fin de semana
+        if dia_semana == 4:  # Viernes
+            return ahora.time() >= datetime.strptime('15:00', '%H:%M').time()
+        elif dia_semana == 5:  # Sábado
+            return True
+        elif dia_semana == 6:  # Domingo
+            return ahora.time() <= datetime.strptime('19:00', '%H:%M').time()
+        
+        return False
+
     def analizar_wma(valores_wma, ventana_analisis=3, umbral_caida=0.1):
         """
         Analiza los valores WMA para detectar señales de venta
