@@ -128,7 +128,7 @@ class BitgetDataUtil:
             #self.data_frame_bkp = DataFrameCheckUtil.create_soporte_resistencia_columns(data_frame=self.data_frame_bkp)
     
     def get_crypto_observe_list(self):
-        return self.crypto_observe_list
+        return self.crypto_observe_list 
         
     def get_historial_x_day_ago_all_crypto(self,  df_master,time_range:TimeRanges=None, limit:int = 500) -> dict:
         
