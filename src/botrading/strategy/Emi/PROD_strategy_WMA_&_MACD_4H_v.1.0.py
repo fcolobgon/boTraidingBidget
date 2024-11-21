@@ -94,7 +94,7 @@ class Strategy:
 
         query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "'))"
         + "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
-        
+
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
         df_short_prueba = filtered_data_frame.query(query)
 
