@@ -49,6 +49,7 @@ class Strategy:
 
         time_range = TimeRanges("HOUR_4") #DAY_1  HOUR_4  MINUTES_1
         hours_window_check = 10 
+        
 
         if Strategy.is_weekend_schedule():
             return filtered_data_frame
@@ -64,7 +65,9 @@ class Strategy:
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
-        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "'))"
+        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')) or "
+        + "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING .value + " == True))"
+        
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
         df_long_prueba = filtered_data_frame.query(query)
 
@@ -90,6 +93,8 @@ class Strategy:
         # -------------------------------- S H O R T  ------------------------------------
 
         query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "'))"
+        + "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
+        
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
         df_short_prueba = filtered_data_frame.query(query)
 
