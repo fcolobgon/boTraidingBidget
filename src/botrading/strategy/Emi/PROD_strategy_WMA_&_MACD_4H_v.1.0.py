@@ -190,7 +190,7 @@ class Strategy:
                 df_short_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
 
                 return df_short_step_1 
-
+            """
         # ********************************************* OPCION 1 **********************************************
             query = "(" + DataFrameColum.ROE.value + " > " + str(15) + ")"  
             df_op1 = filtered_data_frame.query(query)
@@ -202,7 +202,7 @@ class Strategy:
                 df_op1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
                 
                 return df_op1
-
+            """
         # -------------------------------- M O V E  S T O P L O S S   ------------------------------------
 
             #filtered_data_frame.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.5215
