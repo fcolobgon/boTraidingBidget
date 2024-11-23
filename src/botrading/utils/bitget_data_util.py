@@ -548,11 +548,7 @@ class BitgetDataUtil:
             symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
 
             try:
-                
-                if prices_history_dict == None:
-                    prices_history = self.bnb_client.get_historial_x_day_ago(symbol, time_range.x_days, time_range.interval)
-                else:
-                    prices_history = prices_history_dict[symbol]
+                prices_history = prices_history_dict[symbol]
                 
                 prices_close = prices_history['Close'].astype(float)
 
