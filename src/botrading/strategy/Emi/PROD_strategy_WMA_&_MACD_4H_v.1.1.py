@@ -65,9 +65,13 @@ class Strategy:
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
-        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING .value + " == True))"
-        
-        #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
+        #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING .value + " == True))"
+        query = (
+            "(("
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.BLUE_TOP.value)
+            + "')) or (("
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == True))"
+        )      
         df_long_prueba = filtered_data_frame.query(query)
 
         if df_long_prueba.empty == False:
@@ -91,7 +95,13 @@ class Strategy:
 
         # -------------------------------- S H O R T  ------------------------------------
 
-        query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
+        #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
+        query = (
+            "(("
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.RED_TOP.value)
+            + "')) or (("
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == False))"
+        )
 
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
         df_short_prueba = filtered_data_frame.query(query)
@@ -165,7 +175,7 @@ class Strategy:
 
         # -------------------------------- L O N G  ------------------------------------
 
-            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and ((" + DataFrameColum.WMA_ASCENDING.value + " == False) or (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "'))"
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.WMA_ASCENDING.value + " == False)"
             df_long_step_1 = filtered_data_frame.query(query)
 
             if df_long_step_1.empty == False:
@@ -175,7 +185,30 @@ class Strategy:
                 df_long_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
 
                 return df_long_step_1 
+        
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "')"
+            df_long_step_2 = filtered_data_frame.query(query)
 
+            if df_long_step_2.empty == False:
+                df_long_step_2.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_long_step_2.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_long_step_2.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_long_step_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+                return df_long_step_2 
+
+            """
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG') and (" + DataFrameColum.MACD_CHART_ASCENDING .value + " == False)"
+            df_long_step_3 = filtered_data_frame.query(query)
+
+            if df_long_step_3.empty == False:
+                df_long_step_3.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_long_step_3.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_long_step_3.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_long_step_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+                return df_long_step_3 
+            """
         # -------------------------------- S H O R T  ------------------------------------
 
             query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and ((" + DataFrameColum.WMA_ASCENDING.value + " == True) or (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "'))"
@@ -188,6 +221,31 @@ class Strategy:
                 df_short_step_1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
 
                 return df_short_step_1 
+
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')"
+            df_short_step_2 = filtered_data_frame.query(query)
+
+            if df_short_step_2.empty == False:
+                df_short_step_2.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_short_step_2.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_short_step_2.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_short_step_2.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+                return df_short_step_2
+            
+            """
+            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT') and (" + DataFrameColum.MACD_CHART_ASCENDING .value + " == True)"
+            df_short_step_3 = filtered_data_frame.query(query)
+
+            if df_short_step_3.empty == False:
+                df_short_step_3.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
+                df_short_step_3.loc[:, DataFrameColum.NOTE.value] = "-"
+                df_short_step_3.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                df_short_step_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
+
+                return df_short_step_3
+            """
+
             """
         # ********************************************* OPCION 1 **********************************************
             query = "(" + DataFrameColum.ROE.value + " > " + str(15) + ")"  
