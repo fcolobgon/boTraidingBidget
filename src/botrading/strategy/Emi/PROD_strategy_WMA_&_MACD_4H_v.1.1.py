@@ -70,7 +70,7 @@ class Strategy:
             "(("
             + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.BLUE_TOP.value)
             + "')) or (("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == True))"
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_LAST.value) + " > 0))"
         )      
         df_long_prueba = filtered_data_frame.query(query)
 
@@ -100,7 +100,7 @@ class Strategy:
             "(("
             + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.RED_TOP.value)
             + "')) or (("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == False))"
+            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_LAST.value) + " < 0))"
         )
 
         #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
