@@ -158,6 +158,8 @@ class Strategy:
                     df_order[DataFrameColum.STOP_LOSS.value] = 0.0
                     df_order.loc[:, DataFrameColum.NOTE.value] = "-"
                     df_order.loc[:, DataFrameColum.NOTE_3.value] = "-"
+                    df_order.loc[:, DataFrameColum.ROE.value] = 0.0
+                    df_order.loc[:, DataFrameColum.PNL.value] = 0.0
                     df_order[DataFrameColum.STATE.value] = ColumStateValues.SELL.value
 
                     return df_order
@@ -289,6 +291,83 @@ class Strategy:
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    def updating_macd_modif(bitget_data_util: BitgetDataUtil, config_macd:ConfigMACD=ConfigMACD(), time_range:TimeRanges = None, data_frame:pandas.DataFrame = pandas.DataFrame(), prices_history_dict:dict = None, ascending_count:int = 3, previous_period:int = 0, asc_count_chart:int = 4):
+        
+        fast=config_macd.fast
+        slow=config_macd.slow
+        signal=config_macd.signal
+
+        if DataFrameColum.MACD_GOOD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_GOOD_LINE.value] = "-"
+
+        if DataFrameColum.MACD_BAD_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_BAR_CHART.value] = "-"
+
+        if DataFrameColum.MACD_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_LAST.value] = "-"
+
+        if DataFrameColum.MACD_LAST_CHART.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_LAST_CHART.value] = "-"
+    
+        if DataFrameColum.MACD_PREVIOUS_CHART.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_PREVIOUS_CHART.value] = "-"
+
+        if DataFrameColum.MACD_CHART_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CHART_ASCENDING.value] = "-"
+
+        if DataFrameColum.MACD_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_ASCENDING.value] = "-"
+
+        if DataFrameColum.MACD_CRUCE_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CRUCE_LINE.value] = "-"
+
+        if DataFrameColum.MACD_CRUCE_ZERO.value not in data_frame.columns:
+            data_frame[DataFrameColum.MACD_CRUCE_ZERO.value] = "-"
+
+
+        chars = "MACDh_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        blue_line = "MACD_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        red_line = "MACDs_" + str(fast) + "_" + str(slow) + "_" + str(signal)
+        
+        data_frame = DataFrameCheckUtil.create_macd_columns(data_frame=data_frame)
+                        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+
+            try:
+                prices_history = prices_history_dict[symbol]
+                
+                prices_close = prices_history['Close'].astype(float)
+
+                macd =  pandas_ta.macd(close = prices_close, fast=fast, slow=slow, signal=signal)
+                
+                macd_numpy = numpy.array(macd[blue_line])
+                macd_h_numpy = numpy.array(macd[chars])
+                macd_s_numpy = numpy.array(macd[red_line])
+                
+                macd_numpy = macd_numpy[~numpy.isnan(macd_numpy)]
+                macd_h_numpy = macd_h_numpy[~numpy.isnan(macd_h_numpy)]
+                macd_s_numpy = macd_s_numpy[~numpy.isnan(macd_s_numpy)]
+        
+                #data_frame[DataFrameColum.MACD_BAR_CHART.value][ind] = macd_h_numpy
+                data_frame[DataFrameColum.MACD_GOOD_LINE.value][ind] = macd_numpy
+                data_frame[DataFrameColum.MACD_BAD_LINE.value][ind] = macd_s_numpy
+                data_frame.loc[ind, DataFrameColum.MACD_LAST.value] = bitget_data_util.get_last_element(element_list = macd_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_LAST_CHART.value] = bitget_data_util.get_last_element(element_list = macd_h_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MACD_PREVIOUS_CHART.value] = macd_h_numpy[-2]
+                data_frame.loc[ind, DataFrameColum.MACD_CHART_ASCENDING.value] = bitget_data_util.list_is_ascending(check_list = macd_h_numpy, ascending_count = asc_count_chart)
+                data_frame.loc[ind, DataFrameColum.MACD_ASCENDING.value] = bitget_data_util.list_is_ascending(check_list = macd_numpy, ascending_count = ascending_count)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_LINE.value] = bitget_data_util.good_indicator_on_top_of_bad(macd_numpy, macd_s_numpy)
+                data_frame.loc[ind, DataFrameColum.MACD_CRUCE_ZERO.value] = bitget_data_util.cruce_zero(macd_h_numpy)
+                
+            except Exception as e:
+                bitget_data_util.print_error_updating_indicator(symbol, "MACD", e)
+                continue
+        
+        return data_frame 
+
+
     def is_weekend_schedule():
         # Obtener la hora actual
         ahora = datetime.now()
@@ -305,6 +384,7 @@ class Strategy:
             return ahora.time() <= datetime.strptime('19:00', '%H:%M').time()
         
         return False
+
 
     def analizar_wma(valores_wma, ventana_analisis=3, umbral_caida=0.1):
         """
@@ -563,13 +643,11 @@ class Strategy:
             print(
                 data_frame[[DataFrameColum.SYMBOL.value,
                             DataFrameColum.SIDE_TYPE.value,
-                            DataFrameColum.NOTE.value,
-                            DataFrameColum.NOTE_3.value,
                             DataFrameColum.WMA_ASCENDING.value,
                             DataFrameColum.MACD_CRUCE_LINE.value,
+                            DataFrameColum.MACD_CHART_ASCENDING.value,
                             DataFrameColum.ROE.value, 
-                            DataFrameColum.PNL.value, 
-                            DataFrameColum.STOP_LOSS.value
+                            DataFrameColum.PNL.value
                             ]])
             print("#####################################################################################################################")
         else:
