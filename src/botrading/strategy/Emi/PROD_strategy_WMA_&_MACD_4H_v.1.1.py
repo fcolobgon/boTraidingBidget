@@ -66,12 +66,7 @@ class Strategy:
 
         # -------------------------------- L O N G  ------------------------------------
         #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING .value + " == True))"
-        query = (
-            "(("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.BLUE_TOP.value)
-            + "')) or (("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == True) and (" + str(DataFrameColum.MACD_LAST.value) + " > 0))"
-        )      
+        query = "("+ DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_TOP.value  + "') and (" + DataFrameColum.MACD_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_LAST.value + " > 0)"
         df_long_prueba = filtered_data_frame.query(query)
 
         if df_long_prueba.empty == False:
@@ -96,14 +91,7 @@ class Strategy:
         # -------------------------------- S H O R T  ------------------------------------
 
         #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
-        query = (
-            "(("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and ("+ str(DataFrameColum.MACD_CRUCE_LINE.value)+ " == '" + str(ColumLineValues.RED_TOP.value)
-            + "')) or (("
-            + str(DataFrameColum.WMA_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_ASCENDING.value) + " == False) and (" + str(DataFrameColum.MACD_LAST.value) + " < 0))"
-        )
-
-        #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
+        query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.RED_TOP.value+ "') and (" + DataFrameColum.MACD_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_LAST.value + " < 0)"
         df_short_prueba = filtered_data_frame.query(query)
 
         if df_short_prueba.empty == False:
@@ -125,7 +113,6 @@ class Strategy:
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
 
         return filtered_df_master
-
 
     @staticmethod
     def apply_sell(bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
