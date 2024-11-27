@@ -86,7 +86,7 @@ class Strategy:
 
                 df_long_prueba.loc[ind, DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_BUY.value
 
-            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba)
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba) 
 
         # -------------------------------- S H O R T  ------------------------------------
 
