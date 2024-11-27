@@ -831,9 +831,9 @@ class BitgetDataUtil:
             return ColumLineValues.BLUE_CRUCE_TOP.value
         elif (line_good[-2] > line_bad[-2]) and (line_good[-1] < line_bad[-1]): 
             return ColumLineValues.BLUE_CRUCE_DOWN.value
-        elif (line_good[-3] < 0) and (line_good[-2] > line_bad[-2]) and (line_good[-1] > line_bad[-1]): 
+        elif (line_good[-2] > line_bad[-2]) and (line_good[-1] > line_bad[-1]): 
             return ColumLineValues.BLUE_TOP.value
-        elif (line_bad[-3] < 0) and (line_good[-2] < line_bad[-2]) and (line_good[-1] < line_bad[-1]):
+        elif (line_good[-2] < line_bad[-2]) and (line_good[-1] < line_bad[-1]):
             return ColumLineValues.RED_TOP.value
 
     
