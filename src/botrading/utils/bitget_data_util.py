@@ -744,18 +744,36 @@ class BitgetDataUtil:
     """
         
     def list_is_ascending(self, check_list:numpy=[], ascending_count:int= 2) -> bool:
-
-        last_elements = check_list[-ascending_count:]
-
-        # Verificamos si es ascendente
-        is_ascending = all(last_elements[i] < last_elements[i + 1] for i in range(len(last_elements) - 1))
+        """
+        Valida si los últimos 'num_elementos' de la lista son ascendentes o descendentes.
         
-        # Verificamos si es descendente
-        is_descending = all(last_elements[i] > last_elements[i + 1] for i in range(len(last_elements) - 1))
-
-        if is_ascending:
+        :param lista: Lista de valores a analizar
+        :param num_elementos: Número de elementos del final a validar
+        :return: 'Ascendente', 'Descendente' o 'No válido'
+        """
+        # Validaciones iniciales
+        if ascending_count > len(check_list):
+            return "No válido (más elementos a validar que lista)"
+        
+        # Cortar la lista por la cola
+        secuencia = check_list[-ascending_count:]
+        
+        # Verificar ascendente
+        es_ascendente = all(
+            secuencia[i] <= secuencia[i+1] 
+            for i in range(len(secuencia)-1)
+        )
+        
+        # Verificar descendente
+        es_descendente = all(
+            secuencia[i] >= secuencia[i+1] 
+            for i in range(len(secuencia)-1)
+        )
+        
+        # Devolver resultado
+        if es_ascendente:
             return True
-        elif is_descending:
+        elif es_descendente:
             return False
         else:
             return -1

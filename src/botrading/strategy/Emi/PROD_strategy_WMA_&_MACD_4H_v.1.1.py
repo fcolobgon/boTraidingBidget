@@ -632,7 +632,7 @@ class Strategy:
                             DataFrameColum.SIDE_TYPE.value,
                             DataFrameColum.WMA_ASCENDING.value,
                             DataFrameColum.MACD_CRUCE_LINE.value,
-                            DataFrameColum.MACD_CHART_ASCENDING.value,
+                            DataFrameColum.MACD_ASCENDING.value,
                             DataFrameColum.ROE.value, 
                             DataFrameColum.PNL.value
                             ]])
