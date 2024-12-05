@@ -54,7 +54,7 @@ class Strategy:
                                                              num_elements_wma=3, num_elements_macd=3, num_elements_chart_macd=2)
 
 
-        Strategy.print_data_frame(message="COMPRA ", data_frame=filtered_data_frame)
+        Strategy.print_data_frame(message="COMPRA 4H", data_frame=filtered_data_frame)
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
@@ -73,6 +73,36 @@ class Strategy:
             df_long_prueba = Strategy.buy_long_short (buy_df = df_long_prueba, side_type = FutureValues.SIDE_TYPE_LONG.value)
 
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba)
+        
+        elif df_long_prueba.empty == True: 
+            """ Aquí buscamos que durante las 4h de cruce de lineas MACD, 
+                queremos consultar el intervalo de 1H, para ver si podemos comprar 1h antes.
+
+                si asciende las 3 ultimas posiciones compramos.
+            
+            """ 
+            # Nos aseguramos que coincida en el cruce del MACD a 4H
+            query = ("(" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_CRUCE_TOP.value + "')")            
+            df_long_cruce = filtered_data_frame.query(query)
+
+            if df_long_cruce.empty == False:
+
+                df_1H = Strategy.calculate_indicators (bitget_data_util=bitget_data_util, df_master = filtered_data_frame, time_range = TimeRanges("HOUR_1"))
+                query = (
+                    "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
+                    " and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_TOP.value + "')"
+                    " and (" + DataFrameColum.MACD_ASCENDING.value + " == True)"
+                    " and (" + DataFrameColum.MACD_LAST_CHART.value + " > 0)"
+                    " and (" + DataFrameColum.MACD_CHART_ASCENDING.value + " == True)"
+                )
+                df_long_1H = df_1H.query(query)
+
+                Strategy.print_data_frame(message="COMPRA 1H", data_frame=df_1H)
+
+                if df_long_1H.empty == False:
+                    df_long_prueba = Strategy.buy_long_short (buy_df = df_long_prueba, side_type = FutureValues.SIDE_TYPE_LONG.value)
+
+                    filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba)
 
         # -------------------------------- S H O R T  ------------------------------------
 
@@ -92,8 +122,34 @@ class Strategy:
             df_short_prueba = Strategy.buy_long_short (buy_df = df_short_prueba, side_type = FutureValues.SIDE_TYPE_SHORT.value)
 
             filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
+        
+        elif df_short_prueba.empty == True:
+
+            # Nos aseguramos que coincida en el cruce del MACD a 4H
+            query = ("(" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_CRUCE_DOWN.value + "')")            
+            df_short_cruce = filtered_data_frame.query(query)
+
+            if df_short_cruce.empty == False:
+
+                df_1H = Strategy.calculate_indicators (bitget_data_util=bitget_data_util, df_master = filtered_data_frame, time_range = TimeRanges("HOUR_1"))
+                query = (
+                    "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
+                    " and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.RED_TOP.value + "')"
+                    " and (" + DataFrameColum.MACD_ASCENDING.value + " == False)"
+                    " and (" + DataFrameColum.MACD_LAST_CHART.value + " < 0)"
+                    " and (" + DataFrameColum.MACD_CHART_ASCENDING.value + " == False)"
+                )
+                df_short_1H = df_1H.query(query)
+
+                Strategy.print_data_frame(message="COMPRA SHORT 1H", data_frame=df_1H)
+
+                if df_short_1H.empty == False:
+                    df_short_prueba = Strategy.buy_long_short (buy_df = df_short_prueba, side_type = FutureValues.SIDE_TYPE_SHORT.value)
+
+                    filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
 
         return filtered_df_master
+
 
     @staticmethod
     def apply_sell(bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:

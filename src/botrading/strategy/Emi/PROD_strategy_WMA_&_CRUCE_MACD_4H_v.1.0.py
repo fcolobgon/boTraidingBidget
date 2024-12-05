@@ -54,46 +54,65 @@ class Strategy:
                                                              num_elements_wma=3, num_elements_macd=3, num_elements_chart_macd=2)
 
 
-        Strategy.print_data_frame(message="COMPRA ", data_frame=filtered_data_frame)
+        Strategy.print_data_frame(message="COMPRA 4H", data_frame=filtered_data_frame)
         #excel_util.save_data_frame( data_frame=filtered_data_frame, exel_name="wma.xlsx")
 
         # -------------------------------- L O N G  ------------------------------------
-        #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == True) and (" + DataFrameColum.MACD_ASCENDING .value + " == True))"
+
+        #STEP 1 - ESTAMOS EN CRUCE??
+        query = ( "(" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_CRUCE_TOP.value + "')")
+        df_cruce_long = filtered_data_frame.query(query)       
+
+        if df_cruce_long.empty == False: 
+            filtered_data_frame.loc[:, DataFrameColum.NOTE.value] = "Step 1 - CRUCE LONG"
+
+        #STEP 2 - JUSTO DESPUES DE CRUCE
         query = (
             "(" + DataFrameColum.WMA_ASCENDING.value + " == True)"
             " and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_TOP.value + "')"
             " and (" + DataFrameColum.MACD_ASCENDING.value + " == True)"
             " and (" + DataFrameColum.MACD_LAST.value + " > 0)"
             " and (" + DataFrameColum.MACD_CHART_ASCENDING.value + " == True)"
+            " and (" + DataFrameColum.NOTE.value + " == 'Step 1 - CRUCE LONG')"
         )
+        df_long_master = filtered_data_frame.query(query)           
 
-        df_long_prueba = filtered_data_frame.query(query)
+        if df_long_master.empty == False:
 
-        if df_long_prueba.empty == False:
-            df_long_prueba = Strategy.buy_long_short (buy_df = df_long_prueba, side_type = FutureValues.SIDE_TYPE_LONG.value)
+            df_long_master.loc[:, DataFrameColum.NOTE.value] = "Step 2 - BUY LONG"
+            df_long_master = Strategy.buy_long_short (buy_df = df_long_master, side_type = FutureValues.SIDE_TYPE_LONG.value)
 
-            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_prueba)
-
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_long_master)
+        
         # -------------------------------- S H O R T  ------------------------------------
+        #STEP 1 - ESTAMOS EN CRUCE??
+        query = ( "(" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.BLUE_CRUCE_DOWN.value + "')")
+        df_cruce_short = filtered_data_frame.query(query)  
 
-        #query = "((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.RED_TOP.value + "')) or ((" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_ASCENDING .value + " == False))"
-        #query = "(" + DataFrameColum.WMA_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.RED_TOP.value+ "') and (" + DataFrameColum.MACD_ASCENDING.value + " == False) and (" + DataFrameColum.MACD_LAST.value + " < 0)"
+        if df_cruce_short.empty == False: 
+            filtered_data_frame.loc[:, DataFrameColum.NOTE.value] = "Step 1 - CRUCE SHORT"
+
+        #STEP 2 - JUSTO DESPUES DE CRUCE
         query = (
             "(" + DataFrameColum.WMA_ASCENDING.value + " == False)"
             " and (" + DataFrameColum.MACD_CRUCE_LINE.value + " == '" + ColumLineValues.RED_TOP.value + "')"
             " and (" + DataFrameColum.MACD_ASCENDING.value + " == False)"
             " and (" + DataFrameColum.MACD_LAST.value + " < 0)"
             " and (" + DataFrameColum.MACD_CHART_ASCENDING.value + " == False)"
+            " and (" + DataFrameColum.NOTE.value + " == 'Step 1 - CRUCE SHORT')"
         )
                 
-        df_short_prueba = filtered_data_frame.query(query)
+        df_short_master = filtered_data_frame.query(query)
 
-        if df_short_prueba.empty == False:
-            df_short_prueba = Strategy.buy_long_short (buy_df = df_short_prueba, side_type = FutureValues.SIDE_TYPE_SHORT.value)
+        if df_short_master.empty == False:
 
-            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_prueba)
+            df_long_master.loc[:, DataFrameColum.NOTE.value] = "Step 2 - BUY SHORT"
+            df_short_master = Strategy.buy_long_short (buy_df = df_short_master, side_type = FutureValues.SIDE_TYPE_SHORT.value)
+
+            filtered_df_master = DataFrameUtil.replace_rows_df_backup_with_df_for_index (df_master = filtered_df_master, df_slave = df_short_master)
 
         return filtered_df_master
+
 
     @staticmethod
     def apply_sell(bitget_data_util: BitgetDataUtil, data_frame: pandas.DataFrame) -> pandas.DataFrame:
@@ -180,19 +199,15 @@ class Strategy:
                 return df_short_step_3
             """
 
-            """
+
         # ********************************************* OPCION 1 **********************************************
-            query = "(" + DataFrameColum.ROE.value + " > " + str(15) + ")"  
+            query = "(" + DataFrameColum.ROE.value + " > " + str(5) + ")"  
             df_op1 = filtered_data_frame.query(query)
 
             if df_op1.empty == False:
-                df_op1.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
-                df_op1.loc[:, DataFrameColum.NOTE.value] = "-"
-                df_op1.loc[:, DataFrameColum.NOTE_3.value] = "-"
-                df_op1.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-                
-                return df_op1
-            """
+                return Strategy.clearing_fields_sell(clean_df=df_short_step_2)
+
+
         # -------------------------------- M O V E  S T O P L O S S   ------------------------------------
 
             #filtered_data_frame.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.5215
@@ -253,6 +268,7 @@ class Strategy:
         clean_df.loc[:, DataFrameColum.MACD_CRUCE_LINE] = "-"
         clean_df.loc[:, DataFrameColum.MACD_ASCENDING] = "-"
         clean_df.loc[:, DataFrameColum.MACD_CHART_ASCENDING] = "-"
+        clean_df.loc[:, DataFrameColum.NOTE.value] = "-"
         clean_df.loc[:, DataFrameColum.ROE] = 0.0
         clean_df.loc[:, DataFrameColum.PNL] = 0.0
         clean_df.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
