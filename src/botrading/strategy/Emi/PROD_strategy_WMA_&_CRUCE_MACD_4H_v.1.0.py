@@ -129,7 +129,10 @@ class Strategy:
             startTime = startTime.replace(hour=0, minute=0, second=0, microsecond=0)
 
             filtered_data_frame =  bitget_data_util.updating_pnl_roe_orders(data_frame=filtered_data_frame, startTime=startTime)
+            Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
 
+            value_limit = 5
+            Strategy.mark_price_exceeds_limit(data_frame = filtered_data_frame, value_limit= value_limit)
             #excel_util.save_data_frame( data_frame=open_order, exel_name="order.xlsx")
 
         # -------------------------------- C O N T R O L  V E N T A  M A N U A L  ------------------------------------
@@ -142,7 +145,7 @@ class Strategy:
 
         # -------------------------------- C O N T R O L  V E N T A  M A N U A L  ------------------------------------                    
 
-            Strategy.print_data_frame(message="VENTA ", data_frame=filtered_data_frame)
+
 
             filtered_data_frame = Strategy.calculate_indicators (bitget_data_util=bitget_data_util, df_master = filtered_data_frame, time_range = TimeRanges("HOUR_4"), 
                                                              num_elements_wma=3, num_elements_macd=3, num_elements_chart_macd=2)
@@ -160,19 +163,7 @@ class Strategy:
 
             if df_long_step_2.empty == False:
                 return Strategy.clearing_fields_sell(clean_df=df_long_step_2)
-            
-            """
-            query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_LONG.value + "') (" + DataFrameColum.MACD_CHART_ASCENDING .value + " == False)"
-            df_long_step_3 = filtered_data_frame.query(query)
 
-            if df_long_step_3.empty == False:
-                df_long_step_3.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
-                df_long_step_3.loc[:, DataFrameColum.NOTE.value] = "-"
-                df_long_step_3.loc[:, DataFrameColum.NOTE_3.value] = "-"
-                df_long_step_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-
-                return df_long_step_3
-            """ 
         # -------------------------------- S H O R T  ------------------------------------
 
             query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "') and ((" + DataFrameColum.WMA_ASCENDING.value + " == True) or (" + DataFrameColum.MACD_CRUCE_LINE .value + " == '" + ColumLineValues.BLUE_TOP.value + "'))"
@@ -186,53 +177,29 @@ class Strategy:
 
             if df_short_step_2.empty == False:
                 return Strategy.clearing_fields_sell(clean_df=df_short_step_2) 
-            """
-            query = "(" + DataFrameColum.SIDE_TYPE.value + " == '" + FutureValues.SIDE_TYPE_SHORT.value + "') and (" + DataFrameColum.MACD_CHART_ASCENDING .value + " == True)"
-            df_short_step_3 = filtered_data_frame.query(query)
-
-            if df_short_step_3.empty == False:
-                df_short_step_3.loc[:, DataFrameColum.STOP_LOSS.value] = 0.0
-                df_short_step_3.loc[:, DataFrameColum.NOTE.value] = "-"
-                df_short_step_3.loc[:, DataFrameColum.NOTE_3.value] = "-"
-                df_short_step_3.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-
-                return df_short_step_3
-            """
 
 
         # ********************************************* OPCION 1 **********************************************
-            query = "(" + DataFrameColum.ROE.value + " > " + str(5) + ")"  
+            """ 
+            Si tiene el valor headdress, es que ya ha superado el value_limit. 
+            Se vende en el momento que baja el value_limit 
+            """
+
+            query = "((" + DataFrameColum.PERCENTAGE_PROFIT.value + " < " + str(value_limit) + ") and (" + DataFrameColum.LOOK.value + " == 'headdress!'))" 
             df_op1 = filtered_data_frame.query(query)
 
             if df_op1.empty == False:
-                return Strategy.clearing_fields_sell(clean_df=df_short_step_2)
+                df_op1.loc[:, DataFrameColum.LOOK.value] = "-"
+
+                return Strategy.clearing_fields_sell(clean_df=df_op1)
 
 
-        # -------------------------------- M O V E  S T O P L O S S   ------------------------------------
+            for ind in filtered_data_frame.index:
+                cntrl_profit_crrnt = float(filtered_data_frame.loc[ind,DataFrameColum.PERCENTAGE_PROFIT.value]) - 0.5
 
-            #filtered_data_frame.loc[:,DataFrameColum.PRESET_STOP_LOSS_PRICE.value] = 0.5215
-            """
-            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_LNG')"
-            df_lng_sl = filtered_data_frame.query(query)
-
-            if df_lng_sl.empty == False:
+                if float(filtered_data_frame.loc[ind,DataFrameColum.STOP_LOSS.value]) < cntrl_profit_crrnt:
+                    filtered_data_frame.loc[ind,DataFrameColum.STOP_LOSS.value] = cntrl_profit_crrnt
             
-                for ind in df_lng_sl.index:
-                    sl = df_lng_sl.loc[ind, DataFrameColum.STOP_LOSS.value]
-            
-                    #INFORMAR STOPLOSS
-
-                    return df_lng_sl
-
-
-            query = "(" + DataFrameColum.NOTE.value + " == 'CHECK_SHRT')"
-            df_shrt_sl = filtered_data_frame.query(query)
-
-            if df_shrt_sl.empty == False:
-                df_shrt_sl.loc[:, DataFrameColum.STOP_LOSS.value] = 0
-                df_shrt_sl.loc[:,DataFrameColum.STATE.value] = ColumStateValues.READY_FOR_SELL.value
-            """
-        
             return filtered_data_frame
 
 
