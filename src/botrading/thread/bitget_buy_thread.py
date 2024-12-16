@@ -45,7 +45,7 @@ class BitgetBuyThreed(threading.Thread):
         self,
         client_bit: BitgetClienManager,
         max_coin_buy: int = 5,
-        quantity_buy_order: int = 100,
+        quantity_buy_order: float = 100,
         observe_coin_list: List[str] = [],
         remove_coin_list: List[str] = [],
         load_from_previous_execution: bool = False,
