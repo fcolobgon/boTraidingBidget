@@ -3,11 +3,17 @@ BITGET_CLIENT_TEST_MODE = false
 LOAD_FROM_PREVIOUS_EXECUTION = false
 
 MAX_COIN_BUY = 1
-QUANTITY_BUY_ORDER = 20
 
-OBSERVE_COIN_LIST = ["BTC","XRP","ETH","SOL","ADA","BIGTME","PEOPLE","STX","TIA"]
+# Si el campo QUANTITY_BUY_ORDER = 0, usaremos la opción de fracionar el disnero disponible 
+# con el campo DIVIDE_AVAILABLE, que se calcula en el main del proyecto 
+QUANTITY_BUY_ORDER = 0
+DIVIDE_AVAILABLE = 3
+
+OBSERVE_COIN_LIST = ["BTC"]
+#OBSERVE_COIN_LIST = ["BTC","XRP","ETH","SOL","ADA","BIGTME","PEOPLE","STX","TIA"]
 #OBSERVE_COIN_LIST = []
-REMOVE_COIN_LIST = ["XMR","AUD","LUNA","BNB","PEPE"]
+
+REMOVE_COIN_LIST = ["XMR","AUD","LUNA","BNB","PEPE","USDC"]
 
 FUTURE_CONTRACT = "umcbl" # "dmcbl" "cmcbl" "sumcbl" "sdmcbl" "scmcbl"
 MARGIN_MODE = "fixed" #"crossed"
