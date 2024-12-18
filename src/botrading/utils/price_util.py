@@ -143,3 +143,11 @@ class PriceUtil:
         else:
             # Si no hay punto decimal, la longitud es 0
             return 0
+
+    def divide_and_round_to_multiple_of_5( value: int, divide_num: int = 2) -> int:
+        # Dividir el valor entre 3 y redondear al entero más cercano
+        divided_value = round(value / divide_num)
+        # Ajustar al múltiplo de 5 más cercano
+        multiple_of_5 = round(divided_value / 5) * 5
+        
+        return multiple_of_5
