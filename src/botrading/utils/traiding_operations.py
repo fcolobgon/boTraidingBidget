@@ -40,6 +40,15 @@ def get_open_positions(clnt_bit: BitgetClienManager) -> pandas.DataFrame:
 """
 def logic_buy(clnt_bit: BitgetClienManager, df_buy, quantity_usdt: int):
 
+    if quantity_usdt == 0:
+        # Si entremos lo que hacemos es mirar el disnero disponible en Wallet
+        # y dividirlo por lo que tenemos indicado en DIVIDE_AVAILABLE
+        # y devolvemos un valor divisible entre 5
+
+        open_order = clnt_bit.client_bit.mix_get_accounts(productType=settings.FUTURE_CONTRACT) 
+        qtty_float = float(open_order['data'][0]['available']) 
+        quantity_usdt = PriceUtil.divide_and_round_to_multiple_of_5(value = int(qtty_float), divide_num = settings.DIVIDE_AVAILABLE)
+
     for ind in df_buy.index:
         symbol = df_buy.loc[ind,DataFrameColum.SYMBOL.value]        
         sideType = str(df_buy.loc[ind, DataFrameColum.SIDE_TYPE.value])
