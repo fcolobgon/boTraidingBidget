@@ -706,6 +706,116 @@ class BitgetDataUtil:
                 continue
         return data_frame 
 
+    def updating_wma(self, length:int = 14, data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):        
+        if DataFrameColum.WMA.value not in data_frame.columns:
+            data_frame[DataFrameColum.WMA.value] = "-"
+
+        if DataFrameColum.WMA_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.WMA_LAST.value] = 0.0
+
+        if DataFrameColum.WMA_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.WMA_ASCENDING.value] = "-"
+        
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            try: 
+                prices_history = prices_history_dict[symbol]
+                close = prices_history['Close'].astype(float)   
+
+                wma = pandas_ta.wma(pandas.Series(close), length = length)
+
+                wma_numpy = numpy.array(wma)
+                wma_numpy = wma_numpy[~numpy.isnan(wma_numpy)]
+                                
+                data_frame[DataFrameColum.WMA.value][ind] = wma_numpy
+
+                print (symbol)
+
+                data_frame.loc[ind, DataFrameColum.WMA_ASCENDING.value] = self.list_is_ascending(check_list = wma_numpy, ascending_count = ascending_count)
+                data_frame.loc[ind, DataFrameColum.WMA_LAST.value] = self.get_last_element(element_list = wma_numpy)
+               
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "WMA", e)
+                continue
+        
+        return data_frame
+
+    def updating_supertrend(self, config_st:ConfigSupertrend=ConfigSupertrend(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0, scalar = bool):
+        
+        length = config_st.length
+        factor = config_st.factor
+        super_name = "SUPERTd_"+ str(length) +"_" + str(factor) +".0"
+        
+        #data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
+
+        if DataFrameColum.SUPER_TREND_1.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_1.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_2.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_2.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_3.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_3.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_4.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_4.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_GOOD.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_GOOD.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_GOOD_ASCENDING.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_GOOD_ASCENDING.value] = "-"
+
+        if DataFrameColum.SUPER_TREND_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_LAST.value] = 0.0
+
+        if DataFrameColum.SUPER_TREND_READY.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPER_TREND_READY.value] = 0.0
+
+        for ind in data_frame.index:
+
+            symbol = data_frame[DataFrameColum.SYMBOL.value][ind]
+            
+            try:
+                
+                prices_history = prices_history_dict[symbol]
+
+                prices_high = prices_history['High'].astype(float)
+                prices_low = prices_history['Low'].astype(float)
+                prices_close = prices_history['Close'].astype(float)
+                    
+                trend = pandas_ta.supertrend(high=prices_high, low=prices_low, close=prices_close, length=length, multiplier=factor)
+                value_trend = numpy.array(trend[super_name])
+                value_trend = value_trend[~numpy.isnan(value_trend)]
+                    
+                if value_trend[-4] == 1:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_3.value] = True
+                else:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_3.value] = False
+                    
+                if value_trend[-3] == 1:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_2.value] = True
+                else:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_2.value] = False
+                
+                if value_trend[-2] == 1:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = True
+                else:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = False
+                    
+                if value_trend[-1] == 1:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = True
+                else:
+                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = False
+                                
+ 
+            except Exception as e:
+                self.print_error_updating_indicator(symbol, "SUPERTREND", e)
+                continue
+        
+        return data_frame
+
 
     def update_percentage_profit(self, data_frame:pandas.DataFrame=pandas.DataFrame()) -> pandas.DataFrame:
         
