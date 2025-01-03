@@ -764,21 +764,21 @@ class BitgetDataUtil:
             for i in range(len(secuencia)-1)
         )
         
-        # Verificar descendente
-        es_descendente = all(
-            secuencia[i] >= secuencia[i+1] 
-            for i in range(len(secuencia)-1)
-        )
-        
         # Devolver resultado
         if es_ascendente:
             return True
-        elif es_descendente:
-            return False
-        else:
-            return -1
+        else: # Verificar descendente
+            es_descendente = all(
+                secuencia[i] >= secuencia[i+1] 
+                for i in range(len(secuencia)-1)
+                )
+            
+            if es_descendente:
+                return False
+            else:
+                return -1
 
-        """
+        """r
         if ((last_elements[-1] > last_elements[-2]) and (last_elements[-2] > last_elements[-3])):
             return True
         elif (last_elements[-1] < last_elements[-2]) and (last_elements[-2] < last_elements[-3]):
