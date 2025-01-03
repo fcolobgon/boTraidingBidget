@@ -20,5 +20,3 @@ MARGIN_MODE = "fixed" #"crossed"
 MARGINCOIN = "USDT"
 
 FILES_BASE_PATH = "C:\\MIO\\Particular\\Python\\boTraidingBidget\\"
-
-

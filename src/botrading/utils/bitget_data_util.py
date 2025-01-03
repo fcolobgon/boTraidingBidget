@@ -135,7 +135,7 @@ class BitgetDataUtil:
         dict_values = {}
 
         for ind in df_master.index:
-            symbol = df_master[DataFrameColum.SYMBOL.value][ind]
+            symbol = df_master[DataFrameColum.SYMBOL.value][ind] 
 
             prices_history = self.client_bit.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
                 "Open time",
