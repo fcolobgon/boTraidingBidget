@@ -156,6 +156,29 @@ class BitgetDataUtil:
             dict_values[symbol] = prices_history
 
         return dict_values
+
+    def generate_data_all_crypto(self,  df_master,time_range:TimeRanges=None, limit:int = 500) -> pandas.DataFrame:
+        
+        for ind in df_master.index:
+            symbol = df_master[DataFrameColum.SYMBOL.value][ind] 
+
+            prices_history = self.client_bit.get_historial_x_day_ago( symbol, time_range.x_days, time_range.interval, limit = limit)[[
+                "Open time",
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Volume",
+                "Close time"
+                ]]
+
+
+            # Ejemplo de DataFrames
+            df_data = pandas.DataFrame({'Open time': prices_history['Open time'].astype(float), 'Open': prices_history['Open'].astype(float), 
+                                    'High': prices_history['High'].astype(float), 'Low': prices_history['Low'].astype(float), 
+                                    'Close': prices_history['Close'].astype(float), 'Volume': prices_history['Volume'].astype(float)})
+
+        return df_data
     
     def updating_open_orders(self, data_frame:pandas.DataFrame=pandas.DataFrame(), startTime:datetime=None):
         
@@ -445,7 +468,7 @@ class BitgetDataUtil:
         
         return data_frame
 
-    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0, scalar = bool):
+    def updating_ma(self, config_ma:ConfigMA=ConfigMA(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3):
         
         length = config_ma.length
         type = config_ma.type
@@ -491,8 +514,8 @@ class BitgetDataUtil:
                 ma_numpy = ma_numpy[~numpy.isnan(ma_numpy)]
                                 
                 data_frame[DataFrameColum.MA.value][ind] = ma_numpy
-                data_frame.loc[ind, DataFrameColum.MA_ASCENDING.value] = self.list_is_ascending(check_list = ma_numpy, ascending_count = ascending_count, previous_period = previous_period)
-                data_frame.loc[ind, DataFrameColum.MA_LAST.value] = self.get_last_element(element_list = ma_numpy, previous_period = previous_period)
+                data_frame.loc[ind, DataFrameColum.MA_ASCENDING.value] = self.list_is_ascending(check_list = ma_numpy, ascending_count = ascending_count)
+                data_frame.loc[ind, DataFrameColum.MA_LAST.value] = self.get_last_element(element_list = ma_numpy)
                 data_frame.loc[ind, DataFrameColum.MA_LAST_ANGLE.value] = self.angle(ma_numpy, last_numbers = 20)
                 #data_frame.loc[ind, DataFrameColum.MA_OPEN_PRICE_PERCENTAGE.value] = (self.get_last_element(element_list = open_price_arr) * 100.0 / self.get_last_element(element_list = ma_numpy)) - 100
                 #data_frame.loc[ind, DataFrameColum.MA_CLOSE_PRICE_PERCENTAGE.value] = (self.get_last_element(element_list = close_price_arr) * 100.0 / self.get_last_element(element_list = ma_numpy)) - 100
@@ -730,7 +753,6 @@ class BitgetDataUtil:
                                 
                 data_frame[DataFrameColum.WMA.value][ind] = wma_numpy
 
-                print (symbol)
 
                 data_frame.loc[ind, DataFrameColum.WMA_ASCENDING.value] = self.list_is_ascending(check_list = wma_numpy, ascending_count = ascending_count)
                 data_frame.loc[ind, DataFrameColum.WMA_LAST.value] = self.get_last_element(element_list = wma_numpy)
@@ -741,37 +763,31 @@ class BitgetDataUtil:
         
         return data_frame
 
-    def updating_supertrend(self, config_st:ConfigSupertrend=ConfigSupertrend(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None, ascending_count:int = 3, previous_period:int = 0, scalar = bool):
+    def updating_supertrend(self, config_st:ConfigSupertrend=ConfigSupertrend(), data_frame:pandas.DataFrame=pandas.DataFrame(), prices_history_dict:dict=None):
         
         length = config_st.length
         factor = config_st.factor
-        super_name = "SUPERTd_"+ str(length) +"_" + str(factor) +".0"
-        
+        supert = "SUPERT_"+ str(length) +"_" + str(factor) +".0"
+        supert_d = "SUPERTd_"+ str(length) +"_" + str(factor) +".0"
+        supert_l = "SUPERTl_"+ str(length) +"_" + str(factor) +".0"
+        supert_s = "SUPERTs_"+ str(length) +"_" + str(factor) +".0"
+                
         #data_frame = DataFrameCheckUtil.create_ma_columns(data_frame=data_frame)
 
-        if DataFrameColum.SUPER_TREND_1.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_1.value] = 0.0
+        if DataFrameColum.SUPERT_LINE.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPERT_LINE.value] = "-"
 
-        if DataFrameColum.SUPER_TREND_2.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_2.value] = 0.0
+        if DataFrameColum.SUPERT_D.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPERT_D.value] = "-"
 
-        if DataFrameColum.SUPER_TREND_3.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_3.value] = 0.0
+        if DataFrameColum.SUPERT_L.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPERT_L.value] = "-"
 
-        if DataFrameColum.SUPER_TREND_4.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_4.value] = 0.0
+        if DataFrameColum.SUPERT_S.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPERT_S.value] = "-"
 
-        if DataFrameColum.SUPER_TREND_GOOD.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_GOOD.value] = 0.0
-
-        if DataFrameColum.SUPER_TREND_GOOD_ASCENDING.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_GOOD_ASCENDING.value] = "-"
-
-        if DataFrameColum.SUPER_TREND_LAST.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_LAST.value] = 0.0
-
-        if DataFrameColum.SUPER_TREND_READY.value not in data_frame.columns:
-            data_frame[DataFrameColum.SUPER_TREND_READY.value] = 0.0
+        if DataFrameColum.SUPERT_LAST.value not in data_frame.columns:
+            data_frame[DataFrameColum.SUPERT_LAST.value] = "-"
 
         for ind in data_frame.index:
 
@@ -785,30 +801,26 @@ class BitgetDataUtil:
                 prices_low = prices_history['Low'].astype(float)
                 prices_close = prices_history['Close'].astype(float)
                     
-                trend = pandas_ta.supertrend(high=prices_high, low=prices_low, close=prices_close, length=length, multiplier=factor)
-                value_trend = numpy.array(trend[super_name])
-                value_trend = value_trend[~numpy.isnan(value_trend)]
-                    
-                if value_trend[-4] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_3.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_3.value] = False
-                    
-                if value_trend[-3] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_2.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_2.value] = False
-                
-                if value_trend[-2] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_1.value] = False
-                    
-                if value_trend[-1] == 1:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = True
-                else:
-                    data_frame.loc[ind, DataFrameColum.SUPER_TREND_LAST.value] = False
-                                
+                st = pandas_ta.supertrend(high=prices_high, low=prices_low, close=prices_close, length=length, multiplier=factor)
+
+                supert = numpy.array(st[supert])
+                supert = supert[~numpy.isnan(supert)]
+
+                supert_d = numpy.array(st[supert_d])
+                supert_d = supert_d[~numpy.isnan(supert_d)]
+
+                supert_l = numpy.array(st[supert_l])
+                supert_l = supert_l[~numpy.isnan(supert_l)]
+
+                supert_s = numpy.array(st[supert_s])
+                supert_s = supert_s[~numpy.isnan(supert_s)]
+
+                data_frame[DataFrameColum.SUPERT_LINE.value][ind] = supert
+                data_frame[DataFrameColum.SUPERT_D.value][ind] = supert_d
+                data_frame[DataFrameColum.SUPERT_L.value][ind] = supert_l
+                data_frame[DataFrameColum.SUPERT_S.value][ind] = supert_s
+                data_frame.loc[ind, DataFrameColum.SUPERT_LAST.value] = self.get_last_element(element_list = supert)
+
  
             except Exception as e:
                 self.print_error_updating_indicator(symbol, "SUPERTREND", e)
